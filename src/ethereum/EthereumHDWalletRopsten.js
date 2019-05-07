@@ -1,11 +1,9 @@
 import BigNumber from 'bignumber.js';
+import fetch from 'isomorphic-fetch';
 
 import EthereumHDWallet from './EthereumHDWallet';
 import Token from '../Token';
 import { defaultTokens } from '../utils/constants';
-
-require('es6-promise').polyfill();
-require('isomorphic-fetch');
 
 export default class EthereumHDWalletRopsten extends EthereumHDWallet {
   /**
