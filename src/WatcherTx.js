@@ -1,19 +1,8 @@
 import Web3 from 'web3';
 import BigNumber from 'bignumber.js';
 import { find } from 'lodash';
-// import gql from 'graphql-tag';
 
 import CONF from './utils/config';
-// import apolloClient from '../utils/apolloClient';
-
-// const confirmationsQuery = gql`
-//   {
-//     requiredConfirmations @client {
-//       token
-//       confirmations
-//     }
-//   }
-// `;
 
 export const ethToWei = (v) => {
   const wei = new BigNumber(v).multipliedBy(1000000000000000000);
@@ -21,12 +10,12 @@ export const ethToWei = (v) => {
 };
 
 export default class WatcherTx {
-  constructor(network) {
+  constructor(network, confirmations = []) {
     this.selectedNetwork = network;
     this.pollingOn = true;
     this.lastBlockChecked = null;
     this.conf = this.getConf();
-    this.loadConfirmations();
+    this.confirmations = confirmations;
 
     this.NETWORKS = {
       XDAI: 'XDAI',
@@ -39,14 +28,6 @@ export default class WatcherTx {
       CONFIRMED: 'CONFIRMED',
       NEW_CONFIRMATION: 'NEW_CONFIRMATION',
     };
-  }
-
-  async loadConfirmations() {
-    // TODO:
-    // const result = await apolloClient.query({
-    //   query: confirmationsQuery,
-    // });
-    // this.confirmations = result.data.requiredConfirmations;
   }
 
   getConf() {
