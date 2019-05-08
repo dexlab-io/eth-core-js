@@ -29,18 +29,17 @@ var CONF = {
 
 class HDWallet {
   /**
-     * Accepts Valid bip32 passphrase
-     * @param  {} secret=''
-     */
+  * Accepts Valid bip32 passphrase
+  * @param  {} secret=''
+  */
   constructor(secret = null) {
     this.type = 'GenericHDWallet';
     this.defaultHDpath = CONF.defaultHDpathEthereum;
     this.secret = secret;
 
     /**
-         * Should we have a pending array?
-         */
-
+     * Should we have a pending array?
+     */
     if (secret) {
       this.import();
     }
@@ -49,9 +48,9 @@ class HDWallet {
   import() {
     // TODO
     /**
-         * we need to indenty if's a mnemonic or private key
-         * if( this.secret.length === 12 )
-         */
+     * we need to indenty if's a mnemonic or private key
+     * if( this.secret.length === 12 )
+     */
     this.importFromMasterSeed();
   }
 
@@ -72,54 +71,54 @@ class HDWallet {
   }
 
   /**
-     * BIP32 Extended private key
-     * Info: m
-     * https://bip32jp.github.io/english/
-     */
+   * BIP32 Extended private key
+   * Info: m
+   * https://bip32jp.github.io/english/
+   */
   getPrivateExtendedKey() {
     return this._hd.privateExtendedKey();
   }
 
   /**
-     * BIP32 Extended public key
-     * Info: m
-     * https://bip32jp.github.io/english/
-     */
+   * BIP32 Extended public key
+   * Info: m
+   * https://bip32jp.github.io/english/
+   */
   getPublicExtendedKey() {
     return this._hd.publicExtendedKey();
   }
 
   /**
-     * BIP32 Derived Extended private key from this.defaultHDpath
-     */
+   * BIP32 Derived Extended private key from this.defaultHDpath
+   */
   getDerivedPrivateExtendedKey() {
     return this._hd.derivePath(this.defaultHDpath).privateExtendedKey();
   }
 
   /**
-     * BIP32 Derived Extended public key from this.defaultHDpath
-     */
+   * BIP32 Derived Extended public key from this.defaultHDpath
+   */
   getDerivedPublicExtendedKey() {
     return this._hd.derivePath(this.defaultHDpath).publicExtendedKey();
   }
 
   /**
-     * Private Key of the instance wallet
-     */
+   * Private Key of the instance wallet
+   */
   getPrivateKey() {
     return this.instanceWallet.getPrivateKey().toString('hex');
   }
 
   /**
-     * return ethUtil.bufferToHex(this.getPrivateKey())
-     */
+   * return ethUtil.bufferToHex(this.getPrivateKey())
+   */
   getPrivateKeyString() {
     return this.instanceWallet.getPrivateKeyString();
   }
 
   /**
-     * return ethUtil.bufferToHex(this.getPrivateKey())
-     */
+   * return ethUtil.bufferToHex(this.getPrivateKey())
+   */
   getPublicKeyString() {
     if (this.watchOnly) return this.address;
     return this.instanceWallet.getPublicKeyString();
@@ -131,12 +130,12 @@ class HDWallet {
 }
 
 class WatcherTx {
-  constructor(network) {
+  constructor(network, confirmations = []) {
     this.selectedNetwork = network;
     this.pollingOn = true;
     this.lastBlockChecked = null;
     this.conf = this.getConf();
-    this.loadConfirmations();
+    this.confirmations = confirmations;
 
     this.NETWORKS = {
       XDAI: 'XDAI',
@@ -149,14 +148,6 @@ class WatcherTx {
       CONFIRMED: 'CONFIRMED',
       NEW_CONFIRMATION: 'NEW_CONFIRMATION',
     };
-  }
-
-  async loadConfirmations() {
-    // TODO:
-    // const result = await apolloClient.query({
-    //   query: confirmationsQuery,
-    // });
-    // this.confirmations = result.data.requiredConfirmations;
   }
 
   getConf() {
