@@ -11,6 +11,19 @@ ETH Core JS collection of ethereum classes by Dexlab.io
 
 ## Usage
 
+```
+import {
+  HDWallet,
+  WatcherTx,
+  xDAIHDWallet,
+  ENSResolver,
+  EthereumHDWallet,
+  EthereumHDWalletKovan,
+  EthereumHDWalletRopsten,
+  LegacyWallet,
+} from 'eth-core-js';
+```
+
 Have a look in `./examples` directory for usage examples.
 
 `./src/main.js` take care of exporting all classes.
