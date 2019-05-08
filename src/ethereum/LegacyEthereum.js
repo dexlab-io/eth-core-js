@@ -1,6 +1,6 @@
 import EthereumJsWallet from 'ethereumjs-wallet';
 
-export default class LegacyWallet {
+export default class LegacyEthereum {
   constructor(privateKey) {
     this.type = 'EthereumLegacyWallet';
     this.secret = privateKey;

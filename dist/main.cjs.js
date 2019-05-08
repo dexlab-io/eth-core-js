@@ -4,35 +4,19 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var BigNumber = _interopDefault(require('bignumber.js'));
 var HDKEY = _interopDefault(require('ethereumjs-wallet/hdkey'));
 var bip39 = _interopDefault(require('bip39'));
-var EthereumTx = _interopDefault(require('ethereumjs-tx'));
 var Web3 = _interopDefault(require('web3'));
+var BigNumber = _interopDefault(require('bignumber.js'));
+var lodash = require('lodash');
+var EthereumTx = _interopDefault(require('ethereumjs-tx'));
 var ProviderEngine = _interopDefault(require('web3-provider-engine'));
 var WalletSubprovider = _interopDefault(require('web3-provider-engine/subproviders/wallet'));
 var findIndex = _interopDefault(require('lodash/findIndex'));
 var isUndefined = _interopDefault(require('lodash/isUndefined'));
-
-const erc20Abi = [{
-  constant: false, inputs: [{ name: '_spender', type: 'address' }, { name: '_value', type: 'uint256' }], name: 'approve', outputs: [{ name: 'success', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
-}, {
-  constant: true, inputs: [], name: 'totalSupply', outputs: [{ name: 'supply', type: 'uint256' }], payable: false, stateMutability: 'view', type: 'function',
-}, {
-  constant: false, inputs: [{ name: '_from', type: 'address' }, { name: '_to', type: 'address' }, { name: '_value', type: 'uint256' }], name: 'transferFrom', outputs: [{ name: 'success', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
-}, {
-  constant: true, inputs: [], name: 'decimals', outputs: [{ name: 'digits', type: 'uint256' }], payable: false, stateMutability: 'view', type: 'function',
-}, {
-  constant: true, inputs: [{ name: '_owner', type: 'address' }], name: 'balanceOf', outputs: [{ name: 'balance', type: 'uint256' }], payable: false, stateMutability: 'view', type: 'function',
-}, {
-  constant: false, inputs: [{ name: '_to', type: 'address' }, { name: '_value', type: 'uint256' }], name: 'transfer', outputs: [{ name: 'success', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
-}, {
-  constant: true, inputs: [{ name: '_owner', type: 'address' }, { name: '_spender', type: 'address' }], name: 'allowance', outputs: [{ name: 'remaining', type: 'uint256' }], payable: false, stateMutability: 'view', type: 'function',
-}, {
-  anonymous: false, inputs: [{ indexed: true, name: '_owner', type: 'address' }, { indexed: true, name: '_spender', type: 'address' }, { indexed: false, name: '_value', type: 'uint256' }], name: 'Approval', type: 'event',
-}];
-
-const UNLIMITED_ALLOWANCE_IN_BASE_UNITS = new BigNumber(2).pow(256).minus(1);
+var fetch$1 = _interopDefault(require('isomorphic-fetch'));
+var ENS = _interopDefault(require('ethjs-ens'));
+var EthereumJsWallet = _interopDefault(require('ethereumjs-wallet'));
 
 var CONF = {
   debug: process.env.NODE_ENV === 'development',
@@ -42,23 +26,6 @@ var CONF = {
   defaultHDpathEthereum: "m/44'/60'/0'/0/0", // Compatible with Jaxx, Metamask, Exodus, imToken, TREZOR (ETH) & Digital Bitbox
   confirmationNeeded: 1,
 };
-
-class Token {
-  constructor(contractAddress = '', decimals = 18, name = '', symbol = '', image = '', price = {}, balance = 0, balanceDecimals = 0) {
-    this.balanceHex = '0x70a08231';
-    this.transferHex = '0xa9059cbb';
-    this.contractAddress = contractAddress;
-    this.isSendAllow = true;
-    this.decimals = decimals;
-    this.name = name;
-    this.symbol = symbol;
-    this.image = image;
-    this.balance = balance;
-    this.balanceDecimals = balanceDecimals;
-    this.transactions = [];
-    this.price = price;
-  }
-}
 
 class HDWallet {
   /**
@@ -160,6 +127,314 @@ class HDWallet {
 
   getAddress() {
     return this.instanceWallet.getAddressString();
+  }
+}
+
+class WatcherTx {
+  constructor(network) {
+    this.selectedNetwork = network;
+    this.pollingOn = true;
+    this.lastBlockChecked = null;
+    this.conf = this.getConf();
+    this.loadConfirmations();
+
+    this.NETWORKS = {
+      XDAI: 'XDAI',
+      ROPSTEN: 'ROPSTEN',
+    };
+
+    this.STATES = {
+      PENDING: 'PENDING',
+      DETECTED: 'DETECTED',
+      CONFIRMED: 'CONFIRMED',
+      NEW_CONFIRMATION: 'NEW_CONFIRMATION',
+    };
+  }
+
+  async loadConfirmations() {
+    // TODO:
+    // const result = await apolloClient.query({
+    //   query: confirmationsQuery,
+    // });
+    // this.confirmations = result.data.requiredConfirmations;
+  }
+
+  getConf() {
+    switch (this.selectedNetwork) {
+      case WatcherTx.NETWORKS.XDAI:
+        return {
+          avgBlockTime: 500,
+          rpc: 'https://dai.poa.network',
+          label: 'xDAI Poa',
+          confirmationNeeded: 1,
+          ws: null,
+        };
+      case WatcherTx.NETWORKS.ROPSTEN:
+        return {
+          avgBlockTime: 21 * 1000,
+          rpc: 'https://ropsten.infura.io/Q1GYXZMXNXfKuURbwBWB',
+          ws: 'wss://ropsten.infura.io/_ws',
+          label: 'Ropsten Ethereum Testnet',
+          confirmationNeeded: 1,
+        };
+      default:
+        return {
+          avgBlockTime: 30 * 1000,
+          rpc: 'https://ropsten.infura.io/Q1GYXZMXNXfKuURbwBWB',
+          ws: 'wss://ropsten.infura.io/_ws',
+          label: 'Ropsten Ethereum Testnet',
+          confirmationNeeded: 1,
+        };
+    }
+  }
+
+  async isConnected() {
+    const web3 = this.getWeb3Http();
+    return web3.eth.net.isListening();
+  }
+
+  getWeb3ws() {
+    return new Web3(new Web3.providers.WebsocketProvider(this.conf.ws));
+  }
+
+  getWeb3Http() {
+    return new Web3(this.conf.rpc);
+  }
+
+  validate(trx, total, recipient) {
+    const web3Http = this.getWeb3Http();
+
+    const toValid = trx.to !== null;
+    if (!toValid) return false;
+
+    const walletToValid = trx.to.toLowerCase() === recipient.toLowerCase();
+    const amountValid =
+      web3Http.utils.toWei(total.toString(), 'ether') === trx.value;
+
+    return toValid && amountValid && walletToValid;
+  }
+
+  async checkTransferFromTxHash(txHash, recipient, total, cb) {
+    const web3 = this.getWeb3Http();
+    const trx = await web3.eth.getTransaction(txHash);
+    const valid = this.validate(trx, total, recipient);
+
+    if (valid) {
+      this.pollingOn = false;
+
+      {
+        console.log('trx', trx);
+        console.log(`Found incoming transaction from ${trx.from} to ${trx.to}`);
+        console.log(`Transaction value is: ${trx.value}`);
+        console.log(`Transaction hash is: ${txHash}\n`);
+      }
+
+      // CB for detected transactions
+      cb({
+        state: WatcherTx.STATES.DETECTED,
+        tx: trx,
+        txHash,
+        numConfirmations: 0,
+      });
+
+      // Initiate transaction confirmation
+      const confirmationsNeeded = lodash.find(this.confirmations, { token: 'xdai' });
+      this.confirmTransaction(txHash, confirmationsNeeded.confirmations, cb);
+    }
+  }
+
+  async xdaiTransfer(recipient, total, cb) {
+    if (this.selectedNetwork !== WatcherTx.NETWORKS.XDAI) { throw new Error('This method is available only on the Xdai network'); }
+
+    const web3 = this.getWeb3Http();
+    const currentBlock = await web3.eth.getBlockNumber();
+
+    console.log(currentBlock, this.pollingOn);
+    // console.log('lastBlockChecked', this.lastBlockChecked);
+
+    if (currentBlock > this.lastBlockChecked) {
+      // console.log('Checking block', currentBlock);
+      const block = await web3.eth.getBlock(currentBlock);
+      this.lastBlockChecked = currentBlock;
+      // console.log('Block', block);
+      // console.log('recipient', recipient);
+      // console.log('total', total);
+
+      if (block.transactions.length) {
+        block.transactions.forEach(async (txHash) => {
+          this.checkTransferFromTxHash(txHash, recipient, total, cb);
+        }, this);
+      }
+    }
+
+    if (this.pollingOn) {
+      setTimeout(
+        () => this.xdaiTransfer(recipient, total, cb),
+        this.conf.avgBlockTime,
+      );
+    }
+  }
+
+  etherTransfers(recipient, total, cb) {
+    // Instantiate web3 with WebSocket provider
+    const web3 = this.getWeb3ws();
+
+    // Instantiate subscription object
+    const subscription = web3.eth.subscribe('pendingTransactions');
+
+    // Subscribe to pending transactions
+    subscription
+      .subscribe((error) => {
+        if (error) console.error(error);
+      })
+      .on('data', async (txHash) => {
+        try {
+          await this.checkTransferFromTxHash(txHash, recipient, total, cb);
+
+          // Unsubscribe from pending transactions.
+          if (!this.pollingOn) {
+            subscription.unsubscribe();
+          }
+        } catch (error) {
+          console.log(error);
+        }
+      });
+  }
+
+  tokenTransfers(contractAddress, ABI, recipient, value, cb) {
+    // Instantiate web3 with WebSocketProvider
+    const web3 = this.getWeb3ws();
+
+    // Instantiate token contract object with JSON ABI and address
+    const tokenContract = new web3.eth.Contract(ABI, contractAddress, (error) => {
+      if (error) console.log(error);
+    });
+
+    // Generate filter options
+    const options = {
+      filter: {
+        _to: recipient,
+        _value: value,
+      },
+      fromBlock: 'latest',
+    };
+
+    // Subscribe to Transfer events matching filter criteria
+    tokenContract.events.Transfer(options, async (error, event) => {
+      if (error) {
+        console.log(error);
+        return;
+      }
+
+      {
+        console.log('event', event);
+      }
+
+      // Initiate transaction confirmation
+      console.log('debug confirmations 2', this.confirmations);
+      this.confirmTransaction(
+        event.transactionHash,
+        CONF.confirmationNeeded,
+        cb,
+      );
+    });
+  }
+
+  async getConfirmations(txHash) {
+    try {
+      // Instantiate web3 with HttpProvider
+      const web3 = this.getWeb3Http();
+
+      // Get transaction details
+      const trx = await web3.eth.getTransaction(txHash);
+
+      // Get current block number
+      const currentBlock = await web3.eth.getBlockNumber();
+
+      // When transaction is unconfirmed, its block number is null.
+      // In this case we return 0 as number of confirmations
+      return trx.blockNumber === null ? 0 : currentBlock - trx.blockNumber;
+    } catch (error) {
+      console.log(error);
+      return error;
+    }
+  }
+
+  confirmTransaction(txHash, confirmations = CONF.confirmationNeeded, cb) {
+    setTimeout(async () => {
+      // Get current number of confirmations and compare it with sought-for value
+      const trxConfirmations = await this.getConfirmations(txHash);
+
+      {
+        console.log(`Transaction with hash ${txHash} has ${trxConfirmations} confirmation(s)`);
+      }
+
+      const confirmationsNeeded = lodash.find(this.confirmations, { token: 'xdai' });
+      if (trxConfirmations >= confirmationsNeeded.confirmations) {
+        // Handle confirmation event according to your business logic
+
+        {
+          console.log(`Transaction with hash ${txHash} has been successfully confirmed`);
+        }
+
+        cb({
+          state: WatcherTx.STATES.CONFIRMED,
+          txHash,
+          numConfirmations: trxConfirmations,
+        });
+
+        return;
+      }
+
+      cb({
+        state: WatcherTx.STATES.NEW_CONFIRMATION,
+        txHash,
+        numConfirmations: trxConfirmations,
+      });
+
+      // Recursive call
+      // eslint-disable-next-line consistent-return
+      return this.confirmTransaction(txHash, confirmations, cb);
+    }, this.conf.avgBlockTime);
+  }
+}
+
+const erc20Abi = [{
+  constant: false, inputs: [{ name: '_spender', type: 'address' }, { name: '_value', type: 'uint256' }], name: 'approve', outputs: [{ name: 'success', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+}, {
+  constant: true, inputs: [], name: 'totalSupply', outputs: [{ name: 'supply', type: 'uint256' }], payable: false, stateMutability: 'view', type: 'function',
+}, {
+  constant: false, inputs: [{ name: '_from', type: 'address' }, { name: '_to', type: 'address' }, { name: '_value', type: 'uint256' }], name: 'transferFrom', outputs: [{ name: 'success', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+}, {
+  constant: true, inputs: [], name: 'decimals', outputs: [{ name: 'digits', type: 'uint256' }], payable: false, stateMutability: 'view', type: 'function',
+}, {
+  constant: true, inputs: [{ name: '_owner', type: 'address' }], name: 'balanceOf', outputs: [{ name: 'balance', type: 'uint256' }], payable: false, stateMutability: 'view', type: 'function',
+}, {
+  constant: false, inputs: [{ name: '_to', type: 'address' }, { name: '_value', type: 'uint256' }], name: 'transfer', outputs: [{ name: 'success', type: 'bool' }], payable: false, stateMutability: 'nonpayable', type: 'function',
+}, {
+  constant: true, inputs: [{ name: '_owner', type: 'address' }, { name: '_spender', type: 'address' }], name: 'allowance', outputs: [{ name: 'remaining', type: 'uint256' }], payable: false, stateMutability: 'view', type: 'function',
+}, {
+  anonymous: false, inputs: [{ indexed: true, name: '_owner', type: 'address' }, { indexed: true, name: '_spender', type: 'address' }, { indexed: false, name: '_value', type: 'uint256' }], name: 'Approval', type: 'event',
+}];
+
+const UNLIMITED_ALLOWANCE_IN_BASE_UNITS = new BigNumber(2).pow(256).minus(1);
+
+const defaultTokens = [];
+
+class Token {
+  constructor(contractAddress = '', decimals = 18, name = '', symbol = '', image = '', price = {}, balance = 0, balanceDecimals = 0) {
+    this.balanceHex = '0x70a08231';
+    this.transferHex = '0xa9059cbb';
+    this.contractAddress = contractAddress;
+    this.isSendAllow = true;
+    this.decimals = decimals;
+    this.name = name;
+    this.symbol = symbol;
+    this.image = image;
+    this.balance = balance;
+    this.balanceDecimals = balanceDecimals;
+    this.transactions = [];
+    this.price = price;
   }
 }
 
@@ -763,7 +1038,7 @@ class xDAIHDWallet extends EthereumHDWallet {
             reject(error);
           }
 
-          console.log('transaction', transaction);
+          // console.log('transaction', transaction);
 
           resolve(transaction);
         },
@@ -775,7 +1050,7 @@ class xDAIHDWallet extends EthereumHDWallet {
     const networkUrl = `${
       this.API_URL
     }api?module=account&action=txlist&address=${this.getAddress()}&sort=desc`;
-    return fetch(networkUrl)
+    return fetch$1(networkUrl)
       .then(response => response.json())
       .then(res => res.result)
       .then((transactions) => {
@@ -804,13 +1079,169 @@ class xDAIHDWallet extends EthereumHDWallet {
   }
 }
 
-/* eslint new-cap: 0 */
+class ENSResolver {
+  constructor() {
+    this.networkUrl = 'https://mainnet.infura.io/Q1GYXZMXNXfKuURbwBWB';
+    const provider = new Web3.providers.HttpProvider(this.networkUrl);
+    this.CHAIN_ID = 1;
+    this.instance = new ENS({ provider, network: this.CHAIN_ID.toString() });
+  }
 
-async function fetchXDaiTransactions(walletAddress) {
-  const wallet = new xDAIHDWallet(null, walletAddress);
-  await wallet.setWeb3();
-  await wallet.fetchEthTransactions();
-  console.log('transactions', wallet.transactions);
+  byAddress(address) {
+    return new Promise((resolve, reject) => {
+      try {
+        this.instance
+          .reverse(address)
+          .then((domain) => {
+            try {
+              resolve(domain);
+            } catch (e) {
+              reject(e);
+            }
+          })
+          .catch((reason) => {
+            try {
+              reject(reason);
+            } catch (e) {
+              reject(reason);
+            }
+          });
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  byDomain(domain) {
+    return new Promise((resolve, reject) => {
+      try {
+        this.instance
+          .lookup(domain)
+          .then((address) => {
+            try {
+              resolve(address);
+            } catch (e) {
+              reject(e);
+            }
+          })
+          .catch((reason) => {
+            try {
+              reject(reason);
+            } catch (e) {
+              reject(reason);
+            }
+          });
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
 }
 
-exports.fetchXDaiTransactions = fetchXDaiTransactions;
+class EthereumHDWalletKovan extends EthereumHDWallet {
+  /**
+     * Accepts Valid bip32 passphrase
+     * @param  {} secret=''
+     */
+  constructor(secret = null, address = null) {
+    super(secret, address);
+    this.type = 'EthereumHDWalletKovan';
+    this.name = 'DexWallet Kovan';
+    this.networkUrl = 'https://kovan.infura.io/Q1GYXZMXNXfKuURbwBWB';
+    this.API_URL = 'https://api-kovan.etherscan.io/';
+    if (secret) {
+      this.setWeb3();
+    }
+  }
+
+  async fetchERC20Transactions(contractAddress) {
+    return null;
+  }
+  // TODO tests
+  /**
+     * Load the tokens based on network
+     */
+  async loadTokensList() {
+    return null;
+  }
+}
+
+class EthereumHDWalletRopsten extends EthereumHDWallet {
+  /**
+     * Accepts Valid bip32 passphrase
+     * @param  {} secret=''
+     */
+  constructor(secret = null, address = null) {
+    super(secret, address);
+    this.type = 'EthereumHDWalletRopsten';
+    this.name = 'Ropsten wallet';
+    this.networkUrl = 'https://ropsten.infura.io/Q1GYXZMXNXfKuURbwBWB';
+    this.API_URL = 'https://api-ropsten.etherscan.io/';
+    this.CHAIN_ID = 3;
+    if (secret) {
+      this.setWeb3();
+    }
+  }
+
+  async fetchERC20Transactions(contractAddress) {
+    return null;
+  }
+  // TODO tests
+  /**
+     * Load the tokens based on network
+     */
+  async loadTokensList() {
+    if (this.tokens.length > 0) return this.tokens;
+
+    const url = `https://blockscout.com/eth/ropsten/api?module=account&action=tokenlist&address=${this.getAddress()}`;
+    return fetch$1(url)
+      .then(response => response.json())
+      .then((data) => {
+        if (!data.result) {
+          return;
+        }
+
+        const tokens = data.result.map((token) => {
+          const tokenDecimal = parseInt(token.decimals, 10);
+          const balance = parseFloat(new BigNumber(token.balance).div(new BigNumber(10).pow(tokenDecimal)).toString());
+          return new Token(
+            token.contractAddress,
+            tokenDecimal,
+            token.name,
+            token.symbol,
+            `https://raw.githubusercontent.com/TrustWallet/tokens/master/images/${token.contractAddress}.png`,
+            {},
+            balance,
+            new BigNumber(token.balance),
+          );
+        });
+
+        const coin = defaultTokens[0];
+        coin.balance = this.balance;
+        this.tokens = tokens;
+
+        // console.log('tokens', tokens);
+        return this.tokens;
+      });
+  }
+}
+
+class LegacyEthereum {
+  constructor(privateKey) {
+    this.type = 'EthereumLegacyWallet';
+    this.secret = privateKey;
+
+    const wallet = EthereumJsWallet.fromPrivateKey(Buffer.from(privateKey, 'hex'));
+
+    this.instanceWallet = wallet;
+  }
+}
+
+exports.HDWallet = HDWallet;
+exports.WatcherTx = WatcherTx;
+exports.xDAIHDWallet = xDAIHDWallet;
+exports.ENSResolver = ENSResolver;
+exports.EthereumHDWallet = EthereumHDWallet;
+exports.EthereumHDWalletKovan = EthereumHDWalletKovan;
+exports.EthereumHDWalletRopsten = EthereumHDWalletRopsten;
+exports.LegacyWallet = LegacyEthereum;

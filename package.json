@@ -27,6 +27,7 @@
     "eslint-config-prettier": "^2.9.0",
     "eslint-plugin-import": "^2.13.0",
     "eslint-plugin-prettier": "^2.6.1",
+    "pre-commit": "^1.2.2",
     "rollup": "^0.60.0"
   },
   "files": [

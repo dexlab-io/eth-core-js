@@ -19,3 +19,5 @@ export const erc20Abi = [{
 }];
 
 export const UNLIMITED_ALLOWANCE_IN_BASE_UNITS = new BigNumber(2).pow(256).minus(1);
+
+export const defaultTokens = [];

@@ -13,6 +13,8 @@ ETH Core JS collection of ethereum classes by Dexlab.io
 
 Have a look in `./examples` directory for usage examples.
 
+`./src/main.js` take care of exporting all classes.
+
 ## License
 
 [MIT](LICENSE)

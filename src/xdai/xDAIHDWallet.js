@@ -1,3 +1,5 @@
+import fetch from 'isomorphic-fetch';
+
 import EthereumHDWallet from '../ethereum/EthereumHDWallet';
 
 export default class xDAIHDWallet extends EthereumHDWallet {
@@ -39,7 +41,7 @@ export default class xDAIHDWallet extends EthereumHDWallet {
             reject(error);
           }
 
-          console.log('transaction', transaction);
+          // console.log('transaction', transaction);
 
           resolve(transaction);
         },

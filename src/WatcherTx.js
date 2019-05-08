@@ -1,51 +1,52 @@
 import Web3 from 'web3';
 import BigNumber from 'bignumber.js';
-import gql from 'graphql-tag';
 import { find } from 'lodash';
+// import gql from 'graphql-tag';
 
-import CONF from '../config';
-import apolloClient from '../utils/apolloClient';
+import CONF from './utils/config';
+// import apolloClient from '../utils/apolloClient';
 
-const confirmationsQuery = gql`
-  {
-    requiredConfirmations @client {
-      token
-      confirmations
-    }
-  }
-`;
+// const confirmationsQuery = gql`
+//   {
+//     requiredConfirmations @client {
+//       token
+//       confirmations
+//     }
+//   }
+// `;
 
-export const ethToWei = v => {
+export const ethToWei = (v) => {
   const wei = new BigNumber(v).multipliedBy(1000000000000000000);
   return wei;
 };
 
 export default class WatcherTx {
-  static NETWORKS = {
-    XDAI: 'XDAI',
-    ROPSTEN: 'ROPSTEN'
-  };
-
-  static STATES = {
-    PENDING: 'PENDING',
-    DETECTED: 'DETECTED',
-    CONFIRMED: 'CONFIRMED',
-    NEW_CONFIRMATION: 'NEW_CONFIRMATION'
-  };
-
   constructor(network) {
     this.selectedNetwork = network;
     this.pollingOn = true;
     this.lastBlockChecked = null;
     this.conf = this.getConf();
     this.loadConfirmations();
+
+    this.NETWORKS = {
+      XDAI: 'XDAI',
+      ROPSTEN: 'ROPSTEN',
+    };
+
+    this.STATES = {
+      PENDING: 'PENDING',
+      DETECTED: 'DETECTED',
+      CONFIRMED: 'CONFIRMED',
+      NEW_CONFIRMATION: 'NEW_CONFIRMATION',
+    };
   }
 
   async loadConfirmations() {
-    const result = await apolloClient.query({
-      query: confirmationsQuery
-    });
-    this.confirmations = result.data.requiredConfirmations;
+    // TODO:
+    // const result = await apolloClient.query({
+    //   query: confirmationsQuery,
+    // });
+    // this.confirmations = result.data.requiredConfirmations;
   }
 
   getConf() {
@@ -56,7 +57,7 @@ export default class WatcherTx {
           rpc: 'https://dai.poa.network',
           label: 'xDAI Poa',
           confirmationNeeded: 1,
-          ws: null
+          ws: null,
         };
       case WatcherTx.NETWORKS.ROPSTEN:
         return {
@@ -64,7 +65,7 @@ export default class WatcherTx {
           rpc: 'https://ropsten.infura.io/Q1GYXZMXNXfKuURbwBWB',
           ws: 'wss://ropsten.infura.io/_ws',
           label: 'Ropsten Ethereum Testnet',
-          confirmationNeeded: 1
+          confirmationNeeded: 1,
         };
       default:
         return {
@@ -72,14 +73,14 @@ export default class WatcherTx {
           rpc: 'https://ropsten.infura.io/Q1GYXZMXNXfKuURbwBWB',
           ws: 'wss://ropsten.infura.io/_ws',
           label: 'Ropsten Ethereum Testnet',
-          confirmationNeeded: 1
+          confirmationNeeded: 1,
         };
     }
   }
 
   async isConnected() {
     const web3 = this.getWeb3Http();
-    return await web3.eth.net.isListening();
+    return web3.eth.net.isListening();
   }
 
   getWeb3ws() {
@@ -123,7 +124,7 @@ export default class WatcherTx {
         state: WatcherTx.STATES.DETECTED,
         tx: trx,
         txHash,
-        numConfirmations: 0
+        numConfirmations: 0,
       });
 
       // Initiate transaction confirmation
@@ -133,8 +134,7 @@ export default class WatcherTx {
   }
 
   async xdaiTransfer(recipient, total, cb) {
-    if (this.selectedNetwork !== WatcherTx.NETWORKS.XDAI)
-      throw new Error(`This method is available only on the Xdai network`);
+    if (this.selectedNetwork !== WatcherTx.NETWORKS.XDAI) { throw new Error('This method is available only on the Xdai network'); }
 
     const web3 = this.getWeb3Http();
     const currentBlock = await web3.eth.getBlockNumber();
@@ -151,7 +151,7 @@ export default class WatcherTx {
       // console.log('total', total);
 
       if (block.transactions.length) {
-        block.transactions.forEach(async txHash => {
+        block.transactions.forEach(async (txHash) => {
           this.checkTransferFromTxHash(txHash, recipient, total, cb);
         }, this);
       }
@@ -160,7 +160,7 @@ export default class WatcherTx {
     if (this.pollingOn) {
       setTimeout(
         () => this.xdaiTransfer(recipient, total, cb),
-        this.conf.avgBlockTime
+        this.conf.avgBlockTime,
       );
     }
   }
@@ -174,10 +174,10 @@ export default class WatcherTx {
 
     // Subscribe to pending transactions
     subscription
-      .subscribe(error => {
+      .subscribe((error) => {
         if (error) console.error(error);
       })
-      .on('data', async txHash => {
+      .on('data', async (txHash) => {
         try {
           await this.checkTransferFromTxHash(txHash, recipient, total, cb);
 
@@ -196,7 +196,7 @@ export default class WatcherTx {
     const web3 = this.getWeb3ws();
 
     // Instantiate token contract object with JSON ABI and address
-    const tokenContract = new web3.eth.Contract(ABI, contractAddress, error => {
+    const tokenContract = new web3.eth.Contract(ABI, contractAddress, (error) => {
       if (error) console.log(error);
     });
 
@@ -204,9 +204,9 @@ export default class WatcherTx {
     const options = {
       filter: {
         _to: recipient,
-        _value: value
+        _value: value,
       },
-      fromBlock: 'latest'
+      fromBlock: 'latest',
     };
 
     // Subscribe to Transfer events matching filter criteria
@@ -225,7 +225,7 @@ export default class WatcherTx {
       this.confirmTransaction(
         event.transactionHash,
         CONF.confirmationNeeded,
-        cb
+        cb,
       );
     });
   }
@@ -256,9 +256,7 @@ export default class WatcherTx {
       const trxConfirmations = await this.getConfirmations(txHash);
 
       if (CONF.ENABLE_LOGS) {
-        console.log(
-          `Transaction with hash ${txHash} has ${trxConfirmations} confirmation(s)`
-        );
+        console.log(`Transaction with hash ${txHash} has ${trxConfirmations} confirmation(s)`);
       }
 
       const confirmationsNeeded = find(this.confirmations, { token: 'xdai' });
@@ -266,15 +264,13 @@ export default class WatcherTx {
         // Handle confirmation event according to your business logic
 
         if (CONF.ENABLE_LOGS) {
-          console.log(
-            `Transaction with hash ${txHash} has been successfully confirmed`
-          );
+          console.log(`Transaction with hash ${txHash} has been successfully confirmed`);
         }
 
         cb({
           state: WatcherTx.STATES.CONFIRMED,
           txHash,
-          numConfirmations: trxConfirmations
+          numConfirmations: trxConfirmations,
         });
 
         return;
@@ -283,7 +279,7 @@ export default class WatcherTx {
       cb({
         state: WatcherTx.STATES.NEW_CONFIRMATION,
         txHash,
-        numConfirmations: trxConfirmations
+        numConfirmations: trxConfirmations,
       });
 
       // Recursive call
