@@ -32,5 +32,8 @@
   },
   "files": [
     "dist"
+  ],
+  "pre-commit": [
+    "build"
   ]
 }
