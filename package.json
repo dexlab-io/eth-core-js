@@ -35,5 +35,11 @@
   ],
   "pre-commit": [
     "build"
-  ]
+  ],
+  "keywords": ["eth core", "ethereum"],
+  "author": "Parminder Klair",
+  "bugs": {
+    "url": "https://github.com/dexlab-io/eth-core-js/issues"
+  },
+  "homepage": "https://github.com/dexlab-io/eth-core-js"
 }
