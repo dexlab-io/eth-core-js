@@ -1,6 +1,6 @@
 {
   "name": "eth-core-js",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "main": "dist/main.cjs.js",
   "license": "MIT",
   "scripts": {
@@ -11,6 +11,7 @@
     "lint": "eslint --fix --ext .js src/"
   },
   "dependencies": {
+    "@babel/polyfill": "^7.4.4",
     "bignumber.js": "^8.1.1",
     "bip39": "^3.0.1",
     "ethereumjs-tx": "^1.3.7",
@@ -18,10 +19,15 @@
     "ethjs-ens": "^2.0.1",
     "isomorphic-fetch": "^2.2.1",
     "lodash": "^4.17.11",
+    "rollup-plugin-babel": "^4.3.2",
     "web3": "^1.0.0-beta.54",
     "web3-provider-engine": "^15.0.0"
   },
   "devDependencies": {
+    "@babel/cli": "^7.4.4",
+    "@babel/core": "^7.4.4",
+    "@babel/plugin-proposal-class-properties": "^7.4.4",
+    "@babel/preset-env": "^7.4.4",
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^12.1.0",
     "eslint-config-prettier": "^2.9.0",
@@ -36,7 +42,10 @@
   "pre-commit": [
     "build"
   ],
-  "keywords": ["eth core", "ethereum"],
+  "keywords": [
+    "eth core",
+    "ethereum"
+  ],
   "author": "Parminder Klair",
   "bugs": {
     "url": "https://github.com/dexlab-io/eth-core-js/issues"

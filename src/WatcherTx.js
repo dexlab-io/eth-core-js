@@ -16,19 +16,19 @@ export default class WatcherTx {
     this.lastBlockChecked = null;
     this.conf = this.getConf();
     this.confirmations = confirmations;
-
-    this.NETWORKS = {
-      XDAI: 'XDAI',
-      ROPSTEN: 'ROPSTEN',
-    };
-
-    this.STATES = {
-      PENDING: 'PENDING',
-      DETECTED: 'DETECTED',
-      CONFIRMED: 'CONFIRMED',
-      NEW_CONFIRMATION: 'NEW_CONFIRMATION',
-    };
   }
+
+  NETWORKS = {
+    XDAI: 'XDAI',
+    ROPSTEN: 'ROPSTEN',
+  };
+
+  STATES = {
+    PENDING: 'PENDING',
+    DETECTED: 'DETECTED',
+    CONFIRMED: 'CONFIRMED',
+    NEW_CONFIRMATION: 'NEW_CONFIRMATION',
+  };
 
   getConf() {
     switch (this.selectedNetwork) {
