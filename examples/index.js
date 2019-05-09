@@ -12,4 +12,6 @@ export async function fetchXDaiTransactions(walletAddress) {
   console.log('transactions', wallet.transactions);
 }
 // fetchXDaiTransactions('0x4f07aFDBaB5D4372AAA7AC439ED3Ba33C39Af752');
-console.log('WatcherTx', WatcherTx, WatcherTx.STATES);
+
+const watchTx = new WatcherTx();
+console.log('WatcherTx', watchTx.STATES.PENDING, watchTx.pollingOn);
