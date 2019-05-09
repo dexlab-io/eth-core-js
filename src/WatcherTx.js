@@ -102,7 +102,7 @@ export default class WatcherTx {
 
       // CB for detected transactions
       cb({
-        state: WatcherTx.STATES.DETECTED,
+        state: this.STATES.DETECTED,
         tx: trx,
         txHash,
         numConfirmations: 0,
@@ -115,7 +115,7 @@ export default class WatcherTx {
   }
 
   async xdaiTransfer(recipient, total, cb) {
-    if (this.selectedNetwork !== WatcherTx.NETWORKS.XDAI) { throw new Error('This method is available only on the Xdai network'); }
+    if (this.selectedNetwork !== this.NETWORKS.XDAI) { throw new Error('This method is available only on the Xdai network'); }
 
     const web3 = this.getWeb3Http();
     const currentBlock = await web3.eth.getBlockNumber();
@@ -249,7 +249,7 @@ export default class WatcherTx {
         }
 
         cb({
-          state: WatcherTx.STATES.CONFIRMED,
+          state: this.STATES.CONFIRMED,
           txHash,
           numConfirmations: trxConfirmations,
         });
@@ -258,7 +258,7 @@ export default class WatcherTx {
       }
 
       cb({
-        state: WatcherTx.STATES.NEW_CONFIRMATION,
+        state: this.STATES.NEW_CONFIRMATION,
         txHash,
         numConfirmations: trxConfirmations,
       });
