@@ -310,7 +310,7 @@ function () {
     key: "getConf",
     value: function getConf() {
       switch (this.selectedNetwork) {
-        case WatcherTx.NETWORKS.XDAI:
+        case this.NETWORKS.XDAI:
           return {
             avgBlockTime: 500,
             rpc: 'https://dai.poa.network',
@@ -319,7 +319,7 @@ function () {
             ws: null
           };
 
-        case WatcherTx.NETWORKS.ROPSTEN:
+        case this.NETWORKS.ROPSTEN:
           return {
             avgBlockTime: 21 * 1000,
             rpc: 'https://ropsten.infura.io/Q1GYXZMXNXfKuURbwBWB',
