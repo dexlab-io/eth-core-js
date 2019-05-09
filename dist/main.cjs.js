@@ -417,7 +417,7 @@ function () {
 
 
                   cb({
-                    state: WatcherTx.STATES.DETECTED,
+                    state: this.STATES.DETECTED,
                     tx: trx,
                     txHash: txHash,
                     numConfirmations: 0
@@ -456,7 +456,7 @@ function () {
           while (1) {
             switch (_context4.prev = _context4.next) {
               case 0:
-                if (!(this.selectedNetwork !== WatcherTx.NETWORKS.XDAI)) {
+                if (!(this.selectedNetwork !== this.NETWORKS.XDAI)) {
                   _context4.next = 2;
                   break;
                 }
@@ -737,7 +737,7 @@ function () {
                 }
 
                 cb({
-                  state: WatcherTx.STATES.CONFIRMED,
+                  state: _this4.STATES.CONFIRMED,
                   txHash: txHash,
                   numConfirmations: trxConfirmations
                 });
@@ -745,7 +745,7 @@ function () {
 
               case 9:
                 cb({
-                  state: WatcherTx.STATES.NEW_CONFIRMATION,
+                  state: _this4.STATES.NEW_CONFIRMATION,
                   txHash: txHash,
                   numConfirmations: trxConfirmations
                 }); // Recursive call
