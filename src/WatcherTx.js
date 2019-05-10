@@ -143,12 +143,14 @@ export default class WatcherTx {
   }
 
   async xdaiTransfer(recipient, total, cb) {
-    if (this.selectedNetwork !== this.NETWORKS.XDAI) { throw new Error('This method is available only on the Xdai network'); }
+    if (this.selectedNetwork !== this.NETWORKS.XDAI) {
+      throw new Error('This method is available only on the Xdai network');
+    }
 
     const web3 = this.getWeb3Http();
     const currentBlock = await web3.eth.getBlockNumber();
 
-    console.log(currentBlock, this.pollingOn);
+    console.log('xdaiTransfer', currentBlock, this.pollingOn);
     // console.log('lastBlockChecked', this.lastBlockChecked);
 
     if (currentBlock > this.lastBlockChecked) {
