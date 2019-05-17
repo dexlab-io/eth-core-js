@@ -140,7 +140,7 @@ function _possibleConstructorReturn(self, call) {
 
 var CONF = {
   debug: process.env.NODE_ENV === 'development',
-  ENABLE_LOGS: true,
+  ENABLE_LOGS: false,
   APP_VERSION: '0.0.1',
   defaultHDpathEthereum: "m/44'/60'/0'/0/0",
   // Compatible with Jaxx, Metamask, Exodus, imToken, TREZOR (ETH) & Digital Bitbox
@@ -408,13 +408,6 @@ function () {
                 if (valid) {
                   this.pollingOn = false;
 
-                  {
-                    console.log('trx', trx);
-                    console.log("Found incoming transaction from ".concat(trx.from, " to ").concat(trx.to));
-                    console.log("Transaction value is: ".concat(trx.value));
-                    console.log("Transaction hash is: ".concat(txHash, "\n"));
-                  } // CB for detected transactions
-
 
                   cb({
                     state: this.STATES.DETECTED,
@@ -470,10 +463,6 @@ function () {
 
               case 5:
                 currentBlock = _context4.sent;
-
-                {
-                  console.log('xdaiTransfer', currentBlock, this.pollingOn);
-                }
 
                 if (!(currentBlock > this.lastBlockChecked)) {
                   _context4.next = 13;
@@ -629,9 +618,6 @@ function () {
                   return _context6.abrupt("return");
 
                 case 3:
-                  {
-                    console.log('event', event);
-                  } // Initiate transaction confirmation
 
 
                   console.log('debug confirmations 2', _this3.confirmations);
@@ -721,10 +707,6 @@ function () {
               case 2:
                 trxConfirmations = _context8.sent;
 
-                {
-                  console.log("Transaction with hash ".concat(txHash, " has ").concat(trxConfirmations, " confirmation(s)"));
-                }
-
                 confirmationsNeeded = lodash.find(_this4.confirmations, {
                   token: 'xdai'
                 });
@@ -732,11 +714,6 @@ function () {
                 if (!(trxConfirmations >= confirmationsNeeded.confirmations)) {
                   _context8.next = 9;
                   break;
-                }
-
-                // Handle confirmation event according to your business logic
-                {
-                  console.log("Transaction with hash ".concat(txHash, " has been successfully confirmed"));
                 }
 
                 cb({
