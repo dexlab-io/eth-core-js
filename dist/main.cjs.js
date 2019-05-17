@@ -470,7 +470,10 @@ function () {
 
               case 5:
                 currentBlock = _context4.sent;
-                console.log('xdaiTransfer', currentBlock, this.pollingOn); // console.log('lastBlockChecked', this.lastBlockChecked);
+
+                {
+                  console.log('xdaiTransfer', currentBlock, this.pollingOn);
+                }
 
                 if (!(currentBlock > this.lastBlockChecked)) {
                   _context4.next = 13;

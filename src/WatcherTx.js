@@ -150,8 +150,9 @@ export default class WatcherTx {
     const web3 = this.getWeb3Http();
     const currentBlock = await web3.eth.getBlockNumber();
 
-    console.log('xdaiTransfer', currentBlock, this.pollingOn);
-    // console.log('lastBlockChecked', this.lastBlockChecked);
+    if (CONF.ENABLE_LOGS) {
+      console.log('xdaiTransfer', currentBlock, this.pollingOn);
+    }
 
     if (currentBlock > this.lastBlockChecked) {
       // console.log('Checking block', currentBlock);
