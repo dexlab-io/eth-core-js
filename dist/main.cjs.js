@@ -6,8 +6,8 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 
 var HDKEY = _interopDefault(require('ethereumjs-wallet/hdkey'));
 var bip39 = _interopDefault(require('bip39'));
-var Web3 = _interopDefault(require('web3'));
 var BigNumber = _interopDefault(require('bignumber.js'));
+var Web3 = _interopDefault(require('web3'));
 var lodash = require('lodash');
 var EthereumTx = _interopDefault(require('ethereumjs-tx'));
 var ProviderEngine = _interopDefault(require('web3-provider-engine'));
@@ -279,6 +279,134 @@ function () {
   return HDWallet;
 }();
 
+var erc20Abi = [{
+  constant: false,
+  inputs: [{
+    name: '_spender',
+    type: 'address'
+  }, {
+    name: '_value',
+    type: 'uint256'
+  }],
+  name: 'approve',
+  outputs: [{
+    name: 'success',
+    type: 'bool'
+  }],
+  payable: false,
+  stateMutability: 'nonpayable',
+  type: 'function'
+}, {
+  constant: true,
+  inputs: [],
+  name: 'totalSupply',
+  outputs: [{
+    name: 'supply',
+    type: 'uint256'
+  }],
+  payable: false,
+  stateMutability: 'view',
+  type: 'function'
+}, {
+  constant: false,
+  inputs: [{
+    name: '_from',
+    type: 'address'
+  }, {
+    name: '_to',
+    type: 'address'
+  }, {
+    name: '_value',
+    type: 'uint256'
+  }],
+  name: 'transferFrom',
+  outputs: [{
+    name: 'success',
+    type: 'bool'
+  }],
+  payable: false,
+  stateMutability: 'nonpayable',
+  type: 'function'
+}, {
+  constant: true,
+  inputs: [],
+  name: 'decimals',
+  outputs: [{
+    name: 'digits',
+    type: 'uint256'
+  }],
+  payable: false,
+  stateMutability: 'view',
+  type: 'function'
+}, {
+  constant: true,
+  inputs: [{
+    name: '_owner',
+    type: 'address'
+  }],
+  name: 'balanceOf',
+  outputs: [{
+    name: 'balance',
+    type: 'uint256'
+  }],
+  payable: false,
+  stateMutability: 'view',
+  type: 'function'
+}, {
+  constant: false,
+  inputs: [{
+    name: '_to',
+    type: 'address'
+  }, {
+    name: '_value',
+    type: 'uint256'
+  }],
+  name: 'transfer',
+  outputs: [{
+    name: 'success',
+    type: 'bool'
+  }],
+  payable: false,
+  stateMutability: 'nonpayable',
+  type: 'function'
+}, {
+  constant: true,
+  inputs: [{
+    name: '_owner',
+    type: 'address'
+  }, {
+    name: '_spender',
+    type: 'address'
+  }],
+  name: 'allowance',
+  outputs: [{
+    name: 'remaining',
+    type: 'uint256'
+  }],
+  payable: false,
+  stateMutability: 'view',
+  type: 'function'
+}, {
+  anonymous: false,
+  inputs: [{
+    indexed: true,
+    name: '_owner',
+    type: 'address'
+  }, {
+    indexed: true,
+    name: '_spender',
+    type: 'address'
+  }, {
+    indexed: false,
+    name: '_value',
+    type: 'uint256'
+  }],
+  name: 'Approval',
+  type: 'event'
+}];
+var UNLIMITED_ALLOWANCE_IN_BASE_UNITS = new BigNumber(2).pow(256).minus(1);
+var defaultTokens = [];
+
 var WatcherTx =
 /*#__PURE__*/
 function () {
@@ -289,7 +417,8 @@ function () {
 
     _defineProperty(this, "NETWORKS", {
       XDAI: 'XDAI',
-      ROPSTEN: 'ROPSTEN'
+      ROPSTEN: 'ROPSTEN',
+      ETHEREUM: 'ETHEREUM'
     });
 
     _defineProperty(this, "STATES", {
@@ -317,6 +446,15 @@ function () {
             label: 'xDAI Poa',
             confirmationNeeded: 1,
             ws: null
+          };
+
+        case this.NETWORKS.ETHEREUM:
+          return {
+            avgBlockTime: 21 * 1000,
+            rpc: 'https://mainnet.infura.io/v3/36bd6b2eb5c4446eaacf626dd90f529a',
+            ws: 'wss://mainnet.infura.io/ws/v3/36bd6b2eb5c4446eaacf626dd90f529a',
+            label: 'Ethereum',
+            confirmationNeeded: 1
           };
 
         case this.NETWORKS.ROPSTEN:
@@ -474,9 +612,7 @@ function () {
 
               case 10:
                 block = _context4.sent;
-                this.lastBlockChecked = currentBlock; // console.log('Block', block);
-                // console.log('recipient', recipient);
-                // console.log('total', total);
+                this.lastBlockChecked = currentBlock;
 
                 if (block.transactions.length) {
                   block.transactions.forEach(
@@ -581,10 +717,11 @@ function () {
     }
   }, {
     key: "tokenTransfers",
-    value: function tokenTransfers(contractAddress, ABI, recipient, value, cb) {
+    value: function tokenTransfers(contractAddress, recipient, value, cb) {
       var _this3 = this;
 
-      // Instantiate web3 with WebSocketProvider
+      var ABI = erc20Abi; // Instantiate web3 with WebSocketProvider
+
       var web3 = this.getWeb3ws(); // Instantiate token contract object with JSON ABI and address
 
       var tokenContract = new web3.eth.Contract(ABI, contractAddress, function (error) {
@@ -745,134 +882,6 @@ function () {
 
   return WatcherTx;
 }();
-
-var erc20Abi = [{
-  constant: false,
-  inputs: [{
-    name: '_spender',
-    type: 'address'
-  }, {
-    name: '_value',
-    type: 'uint256'
-  }],
-  name: 'approve',
-  outputs: [{
-    name: 'success',
-    type: 'bool'
-  }],
-  payable: false,
-  stateMutability: 'nonpayable',
-  type: 'function'
-}, {
-  constant: true,
-  inputs: [],
-  name: 'totalSupply',
-  outputs: [{
-    name: 'supply',
-    type: 'uint256'
-  }],
-  payable: false,
-  stateMutability: 'view',
-  type: 'function'
-}, {
-  constant: false,
-  inputs: [{
-    name: '_from',
-    type: 'address'
-  }, {
-    name: '_to',
-    type: 'address'
-  }, {
-    name: '_value',
-    type: 'uint256'
-  }],
-  name: 'transferFrom',
-  outputs: [{
-    name: 'success',
-    type: 'bool'
-  }],
-  payable: false,
-  stateMutability: 'nonpayable',
-  type: 'function'
-}, {
-  constant: true,
-  inputs: [],
-  name: 'decimals',
-  outputs: [{
-    name: 'digits',
-    type: 'uint256'
-  }],
-  payable: false,
-  stateMutability: 'view',
-  type: 'function'
-}, {
-  constant: true,
-  inputs: [{
-    name: '_owner',
-    type: 'address'
-  }],
-  name: 'balanceOf',
-  outputs: [{
-    name: 'balance',
-    type: 'uint256'
-  }],
-  payable: false,
-  stateMutability: 'view',
-  type: 'function'
-}, {
-  constant: false,
-  inputs: [{
-    name: '_to',
-    type: 'address'
-  }, {
-    name: '_value',
-    type: 'uint256'
-  }],
-  name: 'transfer',
-  outputs: [{
-    name: 'success',
-    type: 'bool'
-  }],
-  payable: false,
-  stateMutability: 'nonpayable',
-  type: 'function'
-}, {
-  constant: true,
-  inputs: [{
-    name: '_owner',
-    type: 'address'
-  }, {
-    name: '_spender',
-    type: 'address'
-  }],
-  name: 'allowance',
-  outputs: [{
-    name: 'remaining',
-    type: 'uint256'
-  }],
-  payable: false,
-  stateMutability: 'view',
-  type: 'function'
-}, {
-  anonymous: false,
-  inputs: [{
-    indexed: true,
-    name: '_owner',
-    type: 'address'
-  }, {
-    indexed: true,
-    name: '_spender',
-    type: 'address'
-  }, {
-    indexed: false,
-    name: '_value',
-    type: 'uint256'
-  }],
-  name: 'Approval',
-  type: 'event'
-}];
-var UNLIMITED_ALLOWANCE_IN_BASE_UNITS = new BigNumber(2).pow(256).minus(1);
-var defaultTokens = [];
 
 /**
  * This file is part of eth-core-js.
