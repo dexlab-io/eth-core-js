@@ -31,6 +31,7 @@ import BigNumber from 'bignumber.js';
 import { find } from 'lodash';
 
 import CONF from './utils/config';
+import { erc20Abi } from './utils/constants';
 
 export const ethToWei = (v) => {
   const wei = new BigNumber(v).multipliedBy(1000000000000000000);
@@ -49,6 +50,7 @@ export default class WatcherTx {
   NETWORKS = {
     XDAI: 'XDAI',
     ROPSTEN: 'ROPSTEN',
+    ETHEREUM: 'ETHEREUM',
   };
 
   STATES = {
@@ -68,6 +70,14 @@ export default class WatcherTx {
           confirmationNeeded: 1,
           ws: null,
         };
+      case this.NETWORKS.ETHEREUM:
+          return {
+            avgBlockTime: 21 * 1000,
+            rpc: 'https://mainnet.infura.io/v3/36bd6b2eb5c4446eaacf626dd90f529a',
+            ws: 'wss://mainnet.infura.io/ws/v3/36bd6b2eb5c4446eaacf626dd90f529a',
+            label: 'Ethereum',
+            confirmationNeeded: 1,
+          };
       case this.NETWORKS.ROPSTEN:
         return {
           avgBlockTime: 21 * 1000,
@@ -155,12 +165,8 @@ export default class WatcherTx {
     }
 
     if (currentBlock > this.lastBlockChecked) {
-      // console.log('Checking block', currentBlock);
       const block = await web3.eth.getBlock(currentBlock);
       this.lastBlockChecked = currentBlock;
-      // console.log('Block', block);
-      // console.log('recipient', recipient);
-      // console.log('total', total);
 
       if (block.transactions.length) {
         block.transactions.forEach(async (txHash) => {
@@ -203,7 +209,8 @@ export default class WatcherTx {
       });
   }
 
-  tokenTransfers(contractAddress, ABI, recipient, value, cb) {
+  tokenTransfers(contractAddress, recipient, value, cb) {
+    const ABI = erc20Abi;
     // Instantiate web3 with WebSocketProvider
     const web3 = this.getWeb3ws();
 
