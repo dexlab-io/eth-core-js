@@ -1,5 +1,5 @@
 {
-  "name": "eth-core-js",
+  "name": "eth-dexcore-js",
   "version": "0.1.8",
   "main": "dist/main.cjs.js",
   "license": "MIT",

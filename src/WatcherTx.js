@@ -33,7 +33,7 @@ import { find } from 'lodash';
 import CONF from './utils/config';
 import { erc20Abi } from './utils/constants';
 
-export const ethToWei = (v) => {
+export const ethToWei = v => {
   const wei = new BigNumber(v).multipliedBy(1000000000000000000);
   return wei;
 };
@@ -47,17 +47,19 @@ export default class WatcherTx {
     this.confirmations = confirmations;
   }
 
+  subscribedEvents = {};
+
   NETWORKS = {
     XDAI: 'XDAI',
     ROPSTEN: 'ROPSTEN',
-    ETHEREUM: 'ETHEREUM',
+    ETHEREUM: 'ETHEREUM'
   };
 
   STATES = {
     PENDING: 'PENDING',
     DETECTED: 'DETECTED',
     CONFIRMED: 'CONFIRMED',
-    NEW_CONFIRMATION: 'NEW_CONFIRMATION',
+    NEW_CONFIRMATION: 'NEW_CONFIRMATION'
   };
 
   getConf() {
@@ -68,23 +70,23 @@ export default class WatcherTx {
           rpc: 'https://dai.poa.network',
           label: 'xDAI Poa',
           confirmationNeeded: 1,
-          ws: null,
+          ws: null
         };
       case this.NETWORKS.ETHEREUM:
-          return {
-            avgBlockTime: 21 * 1000,
-            rpc: 'https://mainnet.infura.io/v3/36bd6b2eb5c4446eaacf626dd90f529a',
-            ws: 'wss://mainnet.infura.io/ws/v3/36bd6b2eb5c4446eaacf626dd90f529a',
-            label: 'Ethereum',
-            confirmationNeeded: 1,
-          };
+        return {
+          avgBlockTime: 21 * 1000,
+          rpc: 'https://mainnet.infura.io/v3/36bd6b2eb5c4446eaacf626dd90f529a',
+          ws: 'wss://mainnet.infura.io/ws/v3/36bd6b2eb5c4446eaacf626dd90f529a',
+          label: 'Ethereum',
+          confirmationNeeded: 1
+        };
       case this.NETWORKS.ROPSTEN:
         return {
           avgBlockTime: 21 * 1000,
           rpc: 'https://ropsten.infura.io/Q1GYXZMXNXfKuURbwBWB',
           ws: 'wss://ropsten.infura.io/_ws',
           label: 'Ropsten Ethereum Testnet',
-          confirmationNeeded: 1,
+          confirmationNeeded: 1
         };
       default:
         return {
@@ -92,7 +94,7 @@ export default class WatcherTx {
           rpc: 'https://ropsten.infura.io/Q1GYXZMXNXfKuURbwBWB',
           ws: 'wss://ropsten.infura.io/_ws',
           label: 'Ropsten Ethereum Testnet',
-          confirmationNeeded: 1,
+          confirmationNeeded: 1
         };
     }
   }
@@ -143,7 +145,7 @@ export default class WatcherTx {
         state: this.STATES.DETECTED,
         tx: trx,
         txHash,
-        numConfirmations: 0,
+        numConfirmations: 0
       });
 
       // Initiate transaction confirmation
@@ -169,7 +171,7 @@ export default class WatcherTx {
       this.lastBlockChecked = currentBlock;
 
       if (block.transactions.length) {
-        block.transactions.forEach(async (txHash) => {
+        block.transactions.forEach(async txHash => {
           this.checkTransferFromTxHash(txHash, recipient, total, cb);
         }, this);
       }
@@ -178,7 +180,7 @@ export default class WatcherTx {
     if (this.pollingOn) {
       setTimeout(
         () => this.xdaiTransfer(recipient, total, cb),
-        this.conf.avgBlockTime,
+        this.conf.avgBlockTime
       );
     }
   }
@@ -192,10 +194,10 @@ export default class WatcherTx {
 
     // Subscribe to pending transactions
     subscription
-      .subscribe((error) => {
+      .subscribe(error => {
         if (error) console.error(error);
       })
-      .on('data', async (txHash) => {
+      .on('data', async txHash => {
         try {
           await this.checkTransferFromTxHash(txHash, recipient, total, cb);
 
@@ -209,44 +211,435 @@ export default class WatcherTx {
       });
   }
 
+  subscribeLogEvent = (contract, eventName, recipient, value, cb) => {
+    const web3 = this.getWeb3ws();
+    const eventJsonInterface = web3.utils._.find(
+      contract._jsonInterface,
+      o => o.name === eventName && o.type === 'event'
+    );
+
+    const weiValue = web3.utils.toWei(value.toString());
+
+    const subscription = web3.eth.subscribe(
+      'logs',
+      {
+        address: contract.options.address,
+        topics: [eventJsonInterface.signature]
+      },
+      (error, result) => {
+        if (!error) {
+          const eventObj = web3.eth.abi.decodeLog(
+            eventJsonInterface.inputs,
+            result.data,
+            result.topics.slice(1)
+          );
+
+          // console.log('result', result, eventObj);
+
+          if (eventObj.dst === recipient) {
+            console.log(`New ${eventName}!`, eventObj);
+            if (eventObj.wad === weiValue) {
+              console.log(`Right value for tx!`);
+              // CB for detected transactions
+              cb({
+                state: this.STATES.DETECTED,
+                tx: result,
+                txHash: result.transactionHash,
+                numConfirmations: 0
+              });
+
+              const confirmationsNeeded = find(this.confirmations, {
+                token: 'dai'
+              });
+              console.log('confirmationsNeeded', this.confirmations);
+
+              this.confirmTransaction(result.transactionHash, 0, cb);
+            }
+          }
+        }
+      }
+    );
+
+    this.subscribedEvents[eventName] = subscription;
+
+    console.log(
+      `subscribed to event '${eventName}' of contract '${
+        contract.options.address
+      }' `
+    );
+  };
+
+  unsubscribeEvent = eventName => {
+    this.subscribedEvents[eventName].unsubscribe(function(error, success) {
+      if (success) console.log('Successfully unsubscribed!');
+    });
+  };
+
   tokenTransfers(contractAddress, recipient, value, cb) {
-    const ABI = erc20Abi;
+    const ABI = [
+      {
+        constant: true,
+        inputs: [],
+        name: 'name',
+        outputs: [{ name: '', type: 'bytes32' }],
+        payable: false,
+        stateMutability: 'view',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [],
+        name: 'stop',
+        outputs: [],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [
+          { name: 'guy', type: 'address' },
+          { name: 'wad', type: 'uint256' }
+        ],
+        name: 'approve',
+        outputs: [{ name: '', type: 'bool' }],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [{ name: 'owner_', type: 'address' }],
+        name: 'setOwner',
+        outputs: [],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: true,
+        inputs: [],
+        name: 'totalSupply',
+        outputs: [{ name: '', type: 'uint256' }],
+        payable: false,
+        stateMutability: 'view',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [
+          { name: 'src', type: 'address' },
+          { name: 'dst', type: 'address' },
+          { name: 'wad', type: 'uint256' }
+        ],
+        name: 'transferFrom',
+        outputs: [{ name: '', type: 'bool' }],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: true,
+        inputs: [],
+        name: 'decimals',
+        outputs: [{ name: '', type: 'uint256' }],
+        payable: false,
+        stateMutability: 'view',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [
+          { name: 'guy', type: 'address' },
+          { name: 'wad', type: 'uint256' }
+        ],
+        name: 'mint',
+        outputs: [],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [{ name: 'wad', type: 'uint256' }],
+        name: 'burn',
+        outputs: [],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [{ name: 'name_', type: 'bytes32' }],
+        name: 'setName',
+        outputs: [],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: true,
+        inputs: [{ name: 'src', type: 'address' }],
+        name: 'balanceOf',
+        outputs: [{ name: '', type: 'uint256' }],
+        payable: false,
+        stateMutability: 'view',
+        type: 'function'
+      },
+      {
+        constant: true,
+        inputs: [],
+        name: 'stopped',
+        outputs: [{ name: '', type: 'bool' }],
+        payable: false,
+        stateMutability: 'view',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [{ name: 'authority_', type: 'address' }],
+        name: 'setAuthority',
+        outputs: [],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: true,
+        inputs: [],
+        name: 'owner',
+        outputs: [{ name: '', type: 'address' }],
+        payable: false,
+        stateMutability: 'view',
+        type: 'function'
+      },
+      {
+        constant: true,
+        inputs: [],
+        name: 'symbol',
+        outputs: [{ name: '', type: 'bytes32' }],
+        payable: false,
+        stateMutability: 'view',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [
+          { name: 'guy', type: 'address' },
+          { name: 'wad', type: 'uint256' }
+        ],
+        name: 'burn',
+        outputs: [],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [{ name: 'wad', type: 'uint256' }],
+        name: 'mint',
+        outputs: [],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [
+          { name: 'dst', type: 'address' },
+          { name: 'wad', type: 'uint256' }
+        ],
+        name: 'transfer',
+        outputs: [{ name: '', type: 'bool' }],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [
+          { name: 'dst', type: 'address' },
+          { name: 'wad', type: 'uint256' }
+        ],
+        name: 'push',
+        outputs: [],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [
+          { name: 'src', type: 'address' },
+          { name: 'dst', type: 'address' },
+          { name: 'wad', type: 'uint256' }
+        ],
+        name: 'move',
+        outputs: [],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [],
+        name: 'start',
+        outputs: [],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: true,
+        inputs: [],
+        name: 'authority',
+        outputs: [{ name: '', type: 'address' }],
+        payable: false,
+        stateMutability: 'view',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [{ name: 'guy', type: 'address' }],
+        name: 'approve',
+        outputs: [{ name: '', type: 'bool' }],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        constant: true,
+        inputs: [
+          { name: 'src', type: 'address' },
+          { name: 'guy', type: 'address' }
+        ],
+        name: 'allowance',
+        outputs: [{ name: '', type: 'uint256' }],
+        payable: false,
+        stateMutability: 'view',
+        type: 'function'
+      },
+      {
+        constant: false,
+        inputs: [
+          { name: 'src', type: 'address' },
+          { name: 'wad', type: 'uint256' }
+        ],
+        name: 'pull',
+        outputs: [],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'function'
+      },
+      {
+        inputs: [{ name: 'symbol_', type: 'bytes32' }],
+        payable: false,
+        stateMutability: 'nonpayable',
+        type: 'constructor'
+      },
+      {
+        anonymous: false,
+        inputs: [
+          { indexed: true, name: 'guy', type: 'address' },
+          { indexed: false, name: 'wad', type: 'uint256' }
+        ],
+        name: 'Mint',
+        type: 'event'
+      },
+      {
+        anonymous: false,
+        inputs: [
+          { indexed: true, name: 'guy', type: 'address' },
+          { indexed: false, name: 'wad', type: 'uint256' }
+        ],
+        name: 'Burn',
+        type: 'event'
+      },
+      {
+        anonymous: false,
+        inputs: [{ indexed: true, name: 'authority', type: 'address' }],
+        name: 'LogSetAuthority',
+        type: 'event'
+      },
+      {
+        anonymous: false,
+        inputs: [{ indexed: true, name: 'owner', type: 'address' }],
+        name: 'LogSetOwner',
+        type: 'event'
+      },
+      {
+        anonymous: true,
+        inputs: [
+          { indexed: true, name: 'sig', type: 'bytes4' },
+          { indexed: true, name: 'guy', type: 'address' },
+          { indexed: true, name: 'foo', type: 'bytes32' },
+          { indexed: true, name: 'bar', type: 'bytes32' },
+          { indexed: false, name: 'wad', type: 'uint256' },
+          { indexed: false, name: 'fax', type: 'bytes' }
+        ],
+        name: 'LogNote',
+        type: 'event'
+      },
+      {
+        anonymous: false,
+        inputs: [
+          { indexed: true, name: 'src', type: 'address' },
+          { indexed: true, name: 'guy', type: 'address' },
+          { indexed: false, name: 'wad', type: 'uint256' }
+        ],
+        name: 'Approval',
+        type: 'event'
+      },
+      {
+        anonymous: false,
+        inputs: [
+          { indexed: true, name: 'src', type: 'address' },
+          { indexed: true, name: 'dst', type: 'address' },
+          { indexed: false, name: 'wad', type: 'uint256' }
+        ],
+        name: 'Transfer',
+        type: 'event'
+      }
+    ];
     // Instantiate web3 with WebSocketProvider
     const web3 = this.getWeb3ws();
 
     // Instantiate token contract object with JSON ABI and address
-    const tokenContract = new web3.eth.Contract(ABI, contractAddress, (error) => {
+    const tokenContract = new web3.eth.Contract(ABI, contractAddress, error => {
       if (error) console.log(error);
     });
 
-    // Generate filter options
-    const options = {
-      filter: {
-        _to: recipient,
-        _value: value,
-      },
-      fromBlock: 'latest',
-    };
+    console.log('tokenContract', tokenContract);
+    this.subscribeLogEvent(tokenContract, 'Transfer', recipient, value, cb);
+
+    // // Generate filter options
+    // const options = {
+    //   filter: {
+    //     _to: recipient,
+    //     _value: value
+    //   },
+    //   fromBlock: 'latest'
+    // };
 
     // Subscribe to Transfer events matching filter criteria
-    tokenContract.events.Transfer(options, async (error, event) => {
-      if (error) {
-        console.log(error);
-        return;
-      }
+    // tokenContract.events.Transfer(options, async (error, event) => {
+    //   if (error) {
+    //     console.log(error);
+    //     return;
+    //   }
 
-      if (CONF.ENABLE_LOGS) {
-        console.log('event', event);
-      }
+    //   if (CONF.ENABLE_LOGS) {
+    //     console.log('event', event);
+    //   }
 
-      // Initiate transaction confirmation
-      console.log('debug confirmations 2', this.confirmations);
-      this.confirmTransaction(
-        event.transactionHash,
-        CONF.confirmationNeeded,
-        cb,
-      );
-    });
+    //   // Initiate transaction confirmation
+    //   console.log('debug confirmations 2', this.confirmations);
+    //   this.confirmTransaction(
+    //     event.transactionHash,
+    //     CONF.confirmationNeeded,
+    //     cb
+    //   );
+    // });
   }
 
   async getConfirmations(txHash) {
@@ -275,7 +668,9 @@ export default class WatcherTx {
       const trxConfirmations = await this.getConfirmations(txHash);
 
       if (CONF.ENABLE_LOGS) {
-        console.log(`Transaction with hash ${txHash} has ${trxConfirmations} confirmation(s)`);
+        console.log(
+          `Transaction with hash ${txHash} has ${trxConfirmations} confirmation(s)`
+        );
       }
 
       const confirmationsNeeded = find(this.confirmations, { token: 'xdai' });
@@ -283,13 +678,15 @@ export default class WatcherTx {
         // Handle confirmation event according to your business logic
 
         if (CONF.ENABLE_LOGS) {
-          console.log(`Transaction with hash ${txHash} has been successfully confirmed`);
+          console.log(
+            `Transaction with hash ${txHash} has been successfully confirmed`
+          );
         }
 
         cb({
           state: this.STATES.CONFIRMED,
           txHash,
-          numConfirmations: trxConfirmations,
+          numConfirmations: trxConfirmations
         });
 
         return;
@@ -298,7 +695,7 @@ export default class WatcherTx {
       cb({
         state: this.STATES.NEW_CONFIRMATION,
         txHash,
-        numConfirmations: trxConfirmations,
+        numConfirmations: trxConfirmations
       });
 
       // Recursive call

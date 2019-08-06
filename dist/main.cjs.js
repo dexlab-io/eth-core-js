@@ -428,6 +428,30 @@ function () {
       NEW_CONFIRMATION: 'NEW_CONFIRMATION'
     });
 
+    _defineProperty(this, "subscribeLogEvent", function (contract, eventName) {
+      var eventJsonInterface = web3.utils._.find(contract._jsonInterface, function (o) {
+        return o.name === eventName && o.type === 'event';
+      });
+
+      var subscription = web3.eth.subscribe('logs', {
+        address: contract.options.address,
+        topics: [eventJsonInterface.signature]
+      }, function (error, result) {
+        if (!error) {
+          var eventObj = web3.eth.abi.decodeLog(eventJsonInterface.inputs, result.data, result.topics.slice(1));
+          console.log("New ".concat(eventName, "!"), eventObj);
+        }
+      });
+      subscribedEvents[eventName] = subscription;
+      console.log("subscribed to event '".concat(eventName, "' of contract '").concat(contract.options.address, "' "));
+    });
+
+    _defineProperty(this, "unsubscribeEvent", function (eventName) {
+      subscribedEvents[eventName].unsubscribe(function (error, success) {
+        if (success) console.log('Successfully unsubscribed!');
+      });
+    });
+
     this.selectedNetwork = network;
     this.pollingOn = true;
     this.lastBlockChecked = null;
@@ -780,22 +804,23 @@ function () {
       var _getConfirmations = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee7(txHash) {
-        var web3, trx, currentBlock;
+        var _web, trx, currentBlock;
+
         return regeneratorRuntime.wrap(function _callee7$(_context7) {
           while (1) {
             switch (_context7.prev = _context7.next) {
               case 0:
                 _context7.prev = 0;
                 // Instantiate web3 with HttpProvider
-                web3 = this.getWeb3Http(); // Get transaction details
+                _web = this.getWeb3Http(); // Get transaction details
 
                 _context7.next = 4;
-                return web3.eth.getTransaction(txHash);
+                return _web.eth.getTransaction(txHash);
 
               case 4:
                 trx = _context7.sent;
                 _context7.next = 7;
-                return web3.eth.getBlockNumber();
+                return _web.eth.getBlockNumber();
 
               case 7:
                 currentBlock = _context7.sent;

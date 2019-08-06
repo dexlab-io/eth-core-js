@@ -112008,7 +112008,149 @@ var define;
   }
 }.call(this));
 
-},{"buffer":"../../../../../.config/yarn/global/node_modules/buffer/index.js"}],"../src/WatcherTx.js":[function(require,module,exports) {
+},{"buffer":"../../../../../.config/yarn/global/node_modules/buffer/index.js"}],"../src/utils/constants.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.defaultTokens = exports.UNLIMITED_ALLOWANCE_IN_BASE_UNITS = exports.erc20Abi = void 0;
+
+var _bignumber = _interopRequireDefault(require("bignumber.js"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var erc20Abi = [{
+  constant: false,
+  inputs: [{
+    name: '_spender',
+    type: 'address'
+  }, {
+    name: '_value',
+    type: 'uint256'
+  }],
+  name: 'approve',
+  outputs: [{
+    name: 'success',
+    type: 'bool'
+  }],
+  payable: false,
+  stateMutability: 'nonpayable',
+  type: 'function'
+}, {
+  constant: true,
+  inputs: [],
+  name: 'totalSupply',
+  outputs: [{
+    name: 'supply',
+    type: 'uint256'
+  }],
+  payable: false,
+  stateMutability: 'view',
+  type: 'function'
+}, {
+  constant: false,
+  inputs: [{
+    name: '_from',
+    type: 'address'
+  }, {
+    name: '_to',
+    type: 'address'
+  }, {
+    name: '_value',
+    type: 'uint256'
+  }],
+  name: 'transferFrom',
+  outputs: [{
+    name: 'success',
+    type: 'bool'
+  }],
+  payable: false,
+  stateMutability: 'nonpayable',
+  type: 'function'
+}, {
+  constant: true,
+  inputs: [],
+  name: 'decimals',
+  outputs: [{
+    name: 'digits',
+    type: 'uint256'
+  }],
+  payable: false,
+  stateMutability: 'view',
+  type: 'function'
+}, {
+  constant: true,
+  inputs: [{
+    name: '_owner',
+    type: 'address'
+  }],
+  name: 'balanceOf',
+  outputs: [{
+    name: 'balance',
+    type: 'uint256'
+  }],
+  payable: false,
+  stateMutability: 'view',
+  type: 'function'
+}, {
+  constant: false,
+  inputs: [{
+    name: '_to',
+    type: 'address'
+  }, {
+    name: '_value',
+    type: 'uint256'
+  }],
+  name: 'transfer',
+  outputs: [{
+    name: 'success',
+    type: 'bool'
+  }],
+  payable: false,
+  stateMutability: 'nonpayable',
+  type: 'function'
+}, {
+  constant: true,
+  inputs: [{
+    name: '_owner',
+    type: 'address'
+  }, {
+    name: '_spender',
+    type: 'address'
+  }],
+  name: 'allowance',
+  outputs: [{
+    name: 'remaining',
+    type: 'uint256'
+  }],
+  payable: false,
+  stateMutability: 'view',
+  type: 'function'
+}, {
+  anonymous: false,
+  inputs: [{
+    indexed: true,
+    name: '_owner',
+    type: 'address'
+  }, {
+    indexed: true,
+    name: '_spender',
+    type: 'address'
+  }, {
+    indexed: false,
+    name: '_value',
+    type: 'uint256'
+  }],
+  name: 'Approval',
+  type: 'event'
+}];
+exports.erc20Abi = erc20Abi;
+var UNLIMITED_ALLOWANCE_IN_BASE_UNITS = new _bignumber.default(2).pow(256).minus(1);
+exports.UNLIMITED_ALLOWANCE_IN_BASE_UNITS = UNLIMITED_ALLOWANCE_IN_BASE_UNITS;
+var defaultTokens = [];
+exports.defaultTokens = defaultTokens;
+},{"bignumber.js":"../node_modules/bignumber.js/bignumber.js"}],"../src/WatcherTx.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -112023,6 +112165,8 @@ var _bignumber = _interopRequireDefault(require("bignumber.js"));
 var _lodash = require("lodash");
 
 var _config = _interopRequireDefault(require("./utils/config"));
+
+var _constants = require("./utils/constants");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -112055,7 +112199,8 @@ function () {
 
     _defineProperty(this, "NETWORKS", {
       XDAI: 'XDAI',
-      ROPSTEN: 'ROPSTEN'
+      ROPSTEN: 'ROPSTEN',
+      ETHEREUM: 'ETHEREUM'
     });
 
     _defineProperty(this, "STATES", {
@@ -112083,6 +112228,15 @@ function () {
             label: 'xDAI Poa',
             confirmationNeeded: 1,
             ws: null
+          };
+
+        case this.NETWORKS.ETHEREUM:
+          return {
+            avgBlockTime: 21 * 1000,
+            rpc: 'https://mainnet.infura.io/v3/36bd6b2eb5c4446eaacf626dd90f529a',
+            ws: 'wss://mainnet.infura.io/ws/v3/36bd6b2eb5c4446eaacf626dd90f529a',
+            label: 'Ethereum',
+            confirmationNeeded: 1
           };
 
         case this.NETWORKS.ROPSTEN:
@@ -112251,9 +112405,7 @@ function () {
 
               case 10:
                 block = _context4.sent;
-                this.lastBlockChecked = currentBlock; // console.log('Block', block);
-                // console.log('recipient', recipient);
-                // console.log('total', total);
+                this.lastBlockChecked = currentBlock;
 
                 if (block.transactions.length) {
                   block.transactions.forEach(
@@ -112358,10 +112510,11 @@ function () {
     }
   }, {
     key: "tokenTransfers",
-    value: function tokenTransfers(contractAddress, ABI, recipient, value, cb) {
+    value: function tokenTransfers(contractAddress, recipient, value, cb) {
       var _this3 = this;
 
-      // Instantiate web3 with WebSocketProvider
+      var ABI = _constants.erc20Abi; // Instantiate web3 with WebSocketProvider
+
       var web3 = this.getWeb3ws(); // Instantiate token contract object with JSON ABI and address
 
       var tokenContract = new web3.eth.Contract(ABI, contractAddress, function (error) {
@@ -112536,7 +112689,7 @@ function () {
 }();
 
 exports.default = WatcherTx;
-},{"web3":"../node_modules/web3/src/index.js","bignumber.js":"../node_modules/bignumber.js/bignumber.js","lodash":"../node_modules/lodash/lodash.js","./utils/config":"../src/utils/config.js"}],"../node_modules/whatwg-fetch/fetch.js":[function(require,module,exports) {
+},{"web3":"../node_modules/web3/src/index.js","bignumber.js":"../node_modules/bignumber.js/bignumber.js","lodash":"../node_modules/lodash/lodash.js","./utils/config":"../src/utils/config.js","./utils/constants":"../src/utils/constants.js"}],"../node_modules/whatwg-fetch/fetch.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -123800,149 +123953,7 @@ function isUndefined(value) {
 
 module.exports = isUndefined;
 
-},{}],"../src/utils/constants.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.defaultTokens = exports.UNLIMITED_ALLOWANCE_IN_BASE_UNITS = exports.erc20Abi = void 0;
-
-var _bignumber = _interopRequireDefault(require("bignumber.js"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var erc20Abi = [{
-  constant: false,
-  inputs: [{
-    name: '_spender',
-    type: 'address'
-  }, {
-    name: '_value',
-    type: 'uint256'
-  }],
-  name: 'approve',
-  outputs: [{
-    name: 'success',
-    type: 'bool'
-  }],
-  payable: false,
-  stateMutability: 'nonpayable',
-  type: 'function'
-}, {
-  constant: true,
-  inputs: [],
-  name: 'totalSupply',
-  outputs: [{
-    name: 'supply',
-    type: 'uint256'
-  }],
-  payable: false,
-  stateMutability: 'view',
-  type: 'function'
-}, {
-  constant: false,
-  inputs: [{
-    name: '_from',
-    type: 'address'
-  }, {
-    name: '_to',
-    type: 'address'
-  }, {
-    name: '_value',
-    type: 'uint256'
-  }],
-  name: 'transferFrom',
-  outputs: [{
-    name: 'success',
-    type: 'bool'
-  }],
-  payable: false,
-  stateMutability: 'nonpayable',
-  type: 'function'
-}, {
-  constant: true,
-  inputs: [],
-  name: 'decimals',
-  outputs: [{
-    name: 'digits',
-    type: 'uint256'
-  }],
-  payable: false,
-  stateMutability: 'view',
-  type: 'function'
-}, {
-  constant: true,
-  inputs: [{
-    name: '_owner',
-    type: 'address'
-  }],
-  name: 'balanceOf',
-  outputs: [{
-    name: 'balance',
-    type: 'uint256'
-  }],
-  payable: false,
-  stateMutability: 'view',
-  type: 'function'
-}, {
-  constant: false,
-  inputs: [{
-    name: '_to',
-    type: 'address'
-  }, {
-    name: '_value',
-    type: 'uint256'
-  }],
-  name: 'transfer',
-  outputs: [{
-    name: 'success',
-    type: 'bool'
-  }],
-  payable: false,
-  stateMutability: 'nonpayable',
-  type: 'function'
-}, {
-  constant: true,
-  inputs: [{
-    name: '_owner',
-    type: 'address'
-  }, {
-    name: '_spender',
-    type: 'address'
-  }],
-  name: 'allowance',
-  outputs: [{
-    name: 'remaining',
-    type: 'uint256'
-  }],
-  payable: false,
-  stateMutability: 'view',
-  type: 'function'
-}, {
-  anonymous: false,
-  inputs: [{
-    indexed: true,
-    name: '_owner',
-    type: 'address'
-  }, {
-    indexed: true,
-    name: '_spender',
-    type: 'address'
-  }, {
-    indexed: false,
-    name: '_value',
-    type: 'uint256'
-  }],
-  name: 'Approval',
-  type: 'event'
-}];
-exports.erc20Abi = erc20Abi;
-var UNLIMITED_ALLOWANCE_IN_BASE_UNITS = new _bignumber.default(2).pow(256).minus(1);
-exports.UNLIMITED_ALLOWANCE_IN_BASE_UNITS = UNLIMITED_ALLOWANCE_IN_BASE_UNITS;
-var defaultTokens = [];
-exports.defaultTokens = defaultTokens;
-},{"bignumber.js":"../node_modules/bignumber.js/bignumber.js"}],"../src/Token.js":[function(require,module,exports) {
+},{}],"../src/Token.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -133302,7 +133313,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55304" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "63538" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
