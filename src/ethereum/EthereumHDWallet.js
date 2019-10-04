@@ -66,6 +66,7 @@ export default class EthereumHDWallet extends HDWallet {
     this.secret = secret;
     this.transactions = [];
     this.usedAddresses = [];
+    this.plugins = []; // {name: TestPlugin, class: Class}
 
     /**
      * Should we have a pending array?
@@ -125,6 +126,18 @@ export default class EthereumHDWallet extends HDWallet {
     });
   }
 
+  installPlugins() {
+    if (this.plugins.length) {
+      this.plugins.forEach((p) => {
+        this[p.name] = new p.class(this);
+      });
+    }
+  }
+
+  addPlugin(name, classTarget) {
+    this.plugins.push({ name, class: classTarget });
+  }
+
   async setWeb3() {
     const { web3, ethereum } = window;
 
@@ -148,6 +161,7 @@ export default class EthereumHDWallet extends HDWallet {
         engine.start();
         this.web3 = new Web3(engine);
         this.web3.eth.defaultAccount = this.getAddress();
+        this.installPlugins();
         resolve();
         return;
       }
@@ -161,6 +175,7 @@ export default class EthereumHDWallet extends HDWallet {
             const accounts = await this.web3.eth.getAccounts();
             // eslint-disable-next-line prefer-destructuring
             this.address = accounts[0];
+            this.installPlugins();
 
             resolve();
           })
@@ -176,6 +191,7 @@ export default class EthereumHDWallet extends HDWallet {
         const accounts = await this.web3.eth.getAccounts();
         // eslint-disable-next-line prefer-destructuring
         this.address = accounts[0];
+        this.installPlugins();
         console.log(this.getAddress());
         console.log('legacy dapp browsers');
         resolve();

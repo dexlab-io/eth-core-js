@@ -91,6 +91,40 @@ function _defineProperty(obj, key, value) {
   return obj;
 }
 
+function ownKeys(object, enumerableOnly) {
+  var keys = Object.keys(object);
+
+  if (Object.getOwnPropertySymbols) {
+    var symbols = Object.getOwnPropertySymbols(object);
+    if (enumerableOnly) symbols = symbols.filter(function (sym) {
+      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
+    });
+    keys.push.apply(keys, symbols);
+  }
+
+  return keys;
+}
+
+function _objectSpread2(target) {
+  for (var i = 1; i < arguments.length; i++) {
+    var source = arguments[i] != null ? arguments[i] : {};
+
+    if (i % 2) {
+      ownKeys(source, true).forEach(function (key) {
+        _defineProperty(target, key, source[key]);
+      });
+    } else if (Object.getOwnPropertyDescriptors) {
+      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+    } else {
+      ownKeys(source).forEach(function (key) {
+        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
+      });
+    }
+  }
+
+  return target;
+}
+
 function _inherits(subClass, superClass) {
   if (typeof superClass !== "function" && superClass !== null) {
     throw new TypeError("Super expression must either be null or a function");
@@ -2576,6 +2610,222 @@ var LegacyEthereum = function LegacyEthereum(privateKey) {
   this.instanceWallet = wallet;
 };
 
+var Transaction =
+/*#__PURE__*/
+function () {
+  _createClass(Transaction, null, [{
+    key: "build",
+    value: function build(obj) {
+      var t = new Transaction();
+      t = _objectSpread2({}, t, {}, obj);
+      return t;
+    }
+  }]);
+
+  function Transaction() {
+    var hash = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+    var from = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
+    var timestamp = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : new Date().getTime();
+    var symbol = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : null;
+    var type = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : null;
+    var value = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : null;
+    var status = arguments.length > 6 && arguments[6] !== undefined ? arguments[6] : 'Unknown';
+    var label = arguments.length > 7 && arguments[7] !== undefined ? arguments[7] : null;
+    var blockHash = arguments.length > 8 && arguments[8] !== undefined ? arguments[8] : null;
+    var contractAddress = arguments.length > 9 && arguments[9] !== undefined ? arguments[9] : null;
+    var cumulativeGasUsed = arguments.length > 10 && arguments[10] !== undefined ? arguments[10] : null;
+    var gasUsed = arguments.length > 11 && arguments[11] !== undefined ? arguments[11] : null;
+    var gasPrice = arguments.length > 12 && arguments[12] !== undefined ? arguments[12] : null;
+    var gasLimit = arguments.length > 13 && arguments[13] !== undefined ? arguments[13] : null;
+    var logs = arguments.length > 14 && arguments[14] !== undefined ? arguments[14] : null;
+    var to = arguments.length > 15 && arguments[15] !== undefined ? arguments[15] : null;
+    var nonce = arguments.length > 16 && arguments[16] !== undefined ? arguments[16] : null;
+
+    _classCallCheck(this, Transaction);
+
+    this.hash = hash;
+    this.from = from;
+    this.timestamp = timestamp;
+    this.symbol = symbol;
+    this.type = type;
+    this.value = value;
+    this.status = status;
+    this.label = label;
+    this.blockHash = blockHash;
+    this.contractAddress = contractAddress;
+    this.cumulativeGasUsed = cumulativeGasUsed;
+    this.from = from;
+    this.gasUsed = gasUsed;
+    this.gasPrice = gasPrice;
+    this.gasLimit = gasLimit;
+    this.logs = logs;
+    this.to = to;
+    this.nonce = nonce;
+  }
+
+  return Transaction;
+}();
+
+var compareAddresses = (function (add1, add2) {
+  return add1.toString().toLowerCase().trim() === add2.toString().toLowerCase().trim();
+});
+
+var BasePlugin =
+/*#__PURE__*/
+function () {
+  function BasePlugin(wallet) {
+    _classCallCheck(this, BasePlugin);
+
+    this.W = wallet;
+    this.cacheApi = null;
+    this.portfolio = [];
+  }
+
+  _createClass(BasePlugin, [{
+    key: "findToken",
+    value: function findToken(contractAddress) {
+      if (isUndefined(contractAddress) || contractAddress === '') throw new Error('contractAddress: is undefined');
+      var idx = findIndex(this.portfolio, function (o) {
+        return compareAddresses(o.contractAddress, contractAddress);
+      });
+
+      if (idx < 0) {
+        return false;
+      }
+
+      return idx;
+    }
+  }, {
+    key: "getToken",
+    value: function getToken(contractAddress) {
+      if (isUndefined(contractAddress) || contractAddress === '') throw new Error('contractAddress: is undefined');
+      var idx = this.findToken(contractAddress);
+
+      if (idx < 0) {
+        return false;
+      }
+
+      return this.portfolio[idx];
+    }
+  }, {
+    key: "getTokenState",
+    value: function () {
+      var _getTokenState = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee(contractAddress) {
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                console.log('Not implemented', contractAddress);
+
+              case 1:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee);
+      }));
+
+      function getTokenState(_x) {
+        return _getTokenState.apply(this, arguments);
+      }
+
+      return getTokenState;
+    }()
+  }, {
+    key: "getState",
+    value: function () {
+      var _getState = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee4() {
+        var _this = this;
+
+        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+          while (1) {
+            switch (_context4.prev = _context4.next) {
+              case 0:
+                return _context4.abrupt("return", new Promise(
+                /*#__PURE__*/
+                function () {
+                  var _ref = _asyncToGenerator(
+                  /*#__PURE__*/
+                  regeneratorRuntime.mark(function _callee3(resolve, reject) {
+                    var promises;
+                    return regeneratorRuntime.wrap(function _callee3$(_context3) {
+                      while (1) {
+                        switch (_context3.prev = _context3.next) {
+                          case 0:
+                            _context3.prev = 0;
+                            promises = _this.portfolio.map(
+                            /*#__PURE__*/
+                            function () {
+                              var _ref2 = _asyncToGenerator(
+                              /*#__PURE__*/
+                              regeneratorRuntime.mark(function _callee2(t) {
+                                return regeneratorRuntime.wrap(function _callee2$(_context2) {
+                                  while (1) {
+                                    switch (_context2.prev = _context2.next) {
+                                      case 0:
+                                        return _context2.abrupt("return", _this.getTokenState(t.contractAddress));
+
+                                      case 1:
+                                      case "end":
+                                        return _context2.stop();
+                                    }
+                                  }
+                                }, _callee2);
+                              }));
+
+                              return function (_x4) {
+                                return _ref2.apply(this, arguments);
+                              };
+                            }());
+                            _context3.next = 4;
+                            return Promise.all(promises);
+
+                          case 4:
+                            resolve();
+                            _context3.next = 10;
+                            break;
+
+                          case 7:
+                            _context3.prev = 7;
+                            _context3.t0 = _context3["catch"](0);
+                            return _context3.abrupt("return", reject());
+
+                          case 10:
+                          case "end":
+                            return _context3.stop();
+                        }
+                      }
+                    }, _callee3, null, [[0, 7]]);
+                  }));
+
+                  return function (_x2, _x3) {
+                    return _ref.apply(this, arguments);
+                  };
+                }()));
+
+              case 1:
+              case "end":
+                return _context4.stop();
+            }
+          }
+        }, _callee4);
+      }));
+
+      function getState() {
+        return _getState.apply(this, arguments);
+      }
+
+      return getState;
+    }()
+  }]);
+
+  return BasePlugin;
+}();
+
 /**
  * This file is part of eth-core-js.
  * Copyright (C) [2017-2019] by [Alessio Delmonti]
@@ -2605,7 +2855,9 @@ var LegacyEthereum = function LegacyEthereum(privateKey) {
  */
 
 exports.HDWallet = HDWallet;
+exports.BasePlugin = BasePlugin;
 exports.WatcherTx = WatcherTx;
+exports.Transaction = Transaction;
 exports.xDAIHDWallet = xDAIHDWallet;
 exports.ENSResolver = ENSResolver;
 exports.EthereumHDWallet = EthereumHDWallet;
