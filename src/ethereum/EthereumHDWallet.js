@@ -250,15 +250,11 @@ export default class EthereumHDWallet extends HDWallet {
   }
 
   async checkTokenAllowanceForAddress(benificiay, tokenAddress = null) {
-    if (isUndefined(benificiay) || tokenAddress === '') { throw new Error('tokenAddress: is undefined'); }
+    if (isUndefined(benificiay) || tokenAddress === '') throw new Error('tokenAddress: is undefined');
 
     return new Promise(async (resolve, reject) => {
       const token = new this.web3.eth.Contract(erc20Abi, tokenAddress);
-      console.log('token', token);
-      const allowance = await token.methods
-        .allowance(this.getAddress(), benificiay)
-        .call();
-      console.log('allowance', allowance);
+      const allowance = await token.methods.allowance(this.getAddress(), benificiay).call();
       resolve(allowance);
     });
   }

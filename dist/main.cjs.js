@@ -1008,6 +1008,8 @@ function (_HDWallet) {
     _this.secret = secret;
     _this.transactions = [];
     _this.usedAddresses = [];
+    _this.plugins = []; // {name: TestPlugin, class: Class}
+
     /**
      * Should we have a pending array?
      */
@@ -1076,12 +1078,31 @@ function (_HDWallet) {
       return sync;
     }()
   }, {
+    key: "installPlugins",
+    value: function installPlugins() {
+      var _this2 = this;
+
+      if (this.plugins.length) {
+        this.plugins.forEach(function (p) {
+          _this2[p.name] = new p["class"](_this2);
+        });
+      }
+    }
+  }, {
+    key: "addPlugin",
+    value: function addPlugin(name, classTarget) {
+      this.plugins.push({
+        name: name,
+        "class": classTarget
+      });
+    }
+  }, {
     key: "setWeb3",
     value: function () {
       var _setWeb = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee4() {
-        var _this2 = this;
+        var _this3 = this;
 
         var _window, web3, ethereum;
 
@@ -1101,30 +1122,33 @@ function (_HDWallet) {
                       while (1) {
                         switch (_context3.prev = _context3.next) {
                           case 0:
-                            if (!_this2.address) {
-                              _context3.next = 10;
+                            if (!_this3.address) {
+                              _context3.next = 11;
                               break;
                             }
 
                             engine = new ProviderEngine();
                             Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send;
 
-                            if (!_this2.watchOnly) {
-                              engine.addProvider(new WalletSubprovider(_this2.instanceWallet, {}));
+                            if (!_this3.watchOnly) {
+                              engine.addProvider(new WalletSubprovider(_this3.instanceWallet, {}));
                             }
 
                             engine.addProvider(new RpcSubprovider({
-                              rpcUrl: _this2.networkUrl
+                              rpcUrl: _this3.networkUrl
                             }));
                             engine.start();
-                            _this2.web3 = new Web3(engine);
-                            _this2.web3.eth.defaultAccount = _this2.getAddress();
+                            _this3.web3 = new Web3(engine);
+                            _this3.web3.eth.defaultAccount = _this3.getAddress();
+
+                            _this3.installPlugins();
+
                             resolve();
                             return _context3.abrupt("return");
 
-                          case 10:
+                          case 11:
                             if (!ethereum) {
-                              _context3.next = 14;
+                              _context3.next = 15;
                               break;
                             }
 
@@ -1139,17 +1163,20 @@ function (_HDWallet) {
                                 while (1) {
                                   switch (_context2.prev = _context2.next) {
                                     case 0:
-                                      _this2.web3 = new Web3(ethereum);
+                                      _this3.web3 = new Web3(ethereum);
                                       _context2.next = 3;
-                                      return _this2.web3.eth.getAccounts();
+                                      return _this3.web3.eth.getAccounts();
 
                                     case 3:
                                       accounts = _context2.sent;
                                       // eslint-disable-next-line prefer-destructuring
-                                      _this2.address = accounts[0];
+                                      _this3.address = accounts[0];
+
+                                      _this3.installPlugins();
+
                                       resolve();
 
-                                    case 6:
+                                    case 7:
                                     case "end":
                                       return _context2.stop();
                                   }
@@ -1161,28 +1188,31 @@ function (_HDWallet) {
                               resolve(deniedAccessError);
                             }); // for legacy dapp browsers
 
-                            _context3.next = 23;
+                            _context3.next = 25;
                             break;
 
-                          case 14:
+                          case 15:
                             if (!(web3 && web3.currentProvider)) {
-                              _context3.next = 23;
+                              _context3.next = 25;
                               break;
                             }
 
-                            _this2.web3 = new Web3(web3.currentProvider);
-                            _context3.next = 18;
-                            return _this2.web3.eth.getAccounts();
+                            _this3.web3 = new Web3(web3.currentProvider);
+                            _context3.next = 19;
+                            return _this3.web3.eth.getAccounts();
 
-                          case 18:
+                          case 19:
                             accounts = _context3.sent;
                             // eslint-disable-next-line prefer-destructuring
-                            _this2.address = accounts[0];
-                            console.log(_this2.getAddress());
+                            _this3.address = accounts[0];
+
+                            _this3.installPlugins();
+
+                            console.log(_this3.getAddress());
                             console.log('legacy dapp browsers');
                             resolve();
 
-                          case 23:
+                          case 25:
                           case "end":
                             return _context3.stop();
                         }
@@ -1215,7 +1245,7 @@ function (_HDWallet) {
       var _getNetworkID = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee6() {
-        var _this3 = this;
+        var _this4 = this;
 
         return regeneratorRuntime.wrap(function _callee6$(_context6) {
           while (1) {
@@ -1232,11 +1262,11 @@ function (_HDWallet) {
                         switch (_context5.prev = _context5.next) {
                           case 0:
                             _context5.next = 2;
-                            return _this3.web3.eth.net.getId();
+                            return _this4.web3.eth.net.getId();
 
                           case 2:
-                            _this3.networkID = _context5.sent;
-                            resolve(_this3.networkID);
+                            _this4.networkID = _context5.sent;
+                            resolve(_this4.networkID);
 
                           case 4:
                           case "end":
@@ -1271,7 +1301,7 @@ function (_HDWallet) {
       var _getNonce = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee7() {
-        var _this4 = this;
+        var _this5 = this;
 
         return regeneratorRuntime.wrap(function _callee7$(_context7) {
           while (1) {
@@ -1279,13 +1309,13 @@ function (_HDWallet) {
               case 0:
                 return _context7.abrupt("return", new Promise(function (resolve, reject) {
                   try {
-                    _this4.web3.eth.getTransactionCount(_this4.getAddress(), 'latest', function (error, nonce) {
+                    _this5.web3.eth.getTransactionCount(_this5.getAddress(), 'latest', function (error, nonce) {
                       if (error) {
                         reject(error);
                       }
 
-                      _this4.nonce = nonce;
-                      resolve(_this4.nonce);
+                      _this5.nonce = nonce;
+                      resolve(_this5.nonce);
                     });
                   } catch (e) {
                     reject(e);
@@ -1312,7 +1342,7 @@ function (_HDWallet) {
       var _waitForTx = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee8(txHash) {
-        var _this5 = this;
+        var _this6 = this;
 
         return regeneratorRuntime.wrap(function _callee8$(_context8) {
           while (1) {
@@ -1321,7 +1351,7 @@ function (_HDWallet) {
                 return _context8.abrupt("return", new Promise(function (resolve, reject) {
                   var checked = 0;
                   var handle = setInterval(function () {
-                    _this5.web3.eth.getTransactionReceipt(txHash).then(function (resp) {
+                    _this6.web3.eth.getTransactionReceipt(txHash).then(function (resp) {
                       if (resp != null && resp.blockNumber > 0) {
                         clearInterval(handle);
                         console.log('resp', resp);
@@ -1359,7 +1389,7 @@ function (_HDWallet) {
       var _checkTokenAllowanceForAddress = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee10(benificiay) {
-        var _this6 = this;
+        var _this7 = this;
 
         var tokenAddress,
             _args10 = arguments;
@@ -1388,10 +1418,10 @@ function (_HDWallet) {
                       while (1) {
                         switch (_context9.prev = _context9.next) {
                           case 0:
-                            token = new _this6.web3.eth.Contract(erc20Abi, tokenAddress);
+                            token = new _this7.web3.eth.Contract(erc20Abi, tokenAddress);
                             console.log('token', token);
                             _context9.next = 4;
-                            return token.methods.allowance(_this6.getAddress(), benificiay).call();
+                            return token.methods.allowance(_this7.getAddress(), benificiay).call();
 
                           case 4:
                             allowance = _context9.sent;
@@ -1431,7 +1461,7 @@ function (_HDWallet) {
       var _sendSignedTransaction = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee11(signedTx) {
-        var _this7 = this;
+        var _this8 = this;
 
         return regeneratorRuntime.wrap(function _callee11$(_context11) {
           while (1) {
@@ -1439,7 +1469,7 @@ function (_HDWallet) {
               case 0:
                 return _context11.abrupt("return", new Promise(function (resolve, reject) {
                   try {
-                    _this7.web3.eth.sendSignedTransaction("0x".concat(signedTx.toString('hex')), function (error, tx) {
+                    _this8.web3.eth.sendSignedTransaction("0x".concat(signedTx.toString('hex')), function (error, tx) {
                       if (error) {
                         console.log('err', error);
                         reject(error);
@@ -1473,7 +1503,7 @@ function (_HDWallet) {
       var _getGasPrice = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee12() {
-        var _this8 = this;
+        var _this9 = this;
 
         return regeneratorRuntime.wrap(function _callee12$(_context12) {
           while (1) {
@@ -1481,12 +1511,12 @@ function (_HDWallet) {
               case 0:
                 return _context12.abrupt("return", new Promise(function (resolve, reject) {
                   try {
-                    _this8.web3.eth.getGasPrice(function (error, price) {
+                    _this9.web3.eth.getGasPrice(function (error, price) {
                       if (error) {
                         reject(error);
                       }
 
-                      _this8.gasPrice = _this8.web3.utils.fromWei(price.toString(), 'ether');
+                      _this9.gasPrice = _this9.web3.utils.fromWei(price.toString(), 'ether');
                       resolve(price);
                     });
                   } catch (e) {
@@ -1518,17 +1548,17 @@ function (_HDWallet) {
       var _fetchBalance = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee13() {
-        var _this9 = this;
+        var _this10 = this;
 
         return regeneratorRuntime.wrap(function _callee13$(_context13) {
           while (1) {
             switch (_context13.prev = _context13.next) {
               case 0:
                 return _context13.abrupt("return", new Promise(function (resolve, reject) {
-                  _this9.web3.eth.getBalance(_this9.getAddress()).then(function (weiBalance) {
-                    var balance = _this9.web3.utils.fromWei(weiBalance, 'ether');
+                  _this10.web3.eth.getBalance(_this10.getAddress()).then(function (weiBalance) {
+                    var balance = _this10.web3.utils.fromWei(weiBalance, 'ether');
 
-                    _this9.balance = parseFloat(balance);
+                    _this10.balance = parseFloat(balance);
                     resolve(balance);
                   })["catch"](function (error) {
                     console.log('error', error);
@@ -1560,7 +1590,7 @@ function (_HDWallet) {
       var _fetchERC20Balance = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee14(contractAddress) {
-        var _this10 = this;
+        var _this11 = this;
 
         var idx,
             tokenDecimals;
@@ -1580,15 +1610,15 @@ function (_HDWallet) {
                 idx = this.findTokenIdx(contractAddress);
                 tokenDecimals = this.tokens[idx].decimals;
                 return _context14.abrupt("return", new Promise(function (resolve, reject) {
-                  _this10.web3.eth.contract(erc20Abi).at(contractAddress).balanceOf(_this10.getAddress(), function (error, decimalsBalance) {
+                  _this11.web3.eth.contract(erc20Abi).at(contractAddress).balanceOf(_this11.getAddress(), function (error, decimalsBalance) {
                     if (error) {
                       console.error(error);
                       reject(error);
                     }
 
                     var balance = decimalsBalance / Math.pow(10, tokenDecimals);
-                    _this10.tokens[idx].balance = balance;
-                    _this10.tokens[idx].balanceDecimals = decimalsBalance;
+                    _this11.tokens[idx].balance = balance;
+                    _this11.tokens[idx].balanceDecimals = decimalsBalance;
                     resolve(balance);
                   });
                 }));
@@ -1678,7 +1708,7 @@ function (_HDWallet) {
       var _fetchEthTransactions = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee16() {
-        var _this11 = this;
+        var _this12 = this;
 
         var networkUrl;
         return regeneratorRuntime.wrap(function _callee16$(_context16) {
@@ -1691,8 +1721,8 @@ function (_HDWallet) {
                 }).then(function (res) {
                   return res.result;
                 }).then(function (transactions) {
-                  _this11._lastPolling = new Date().getTime();
-                  _this11.transactions = transactions.filter(function (o) {
+                  _this12._lastPolling = new Date().getTime();
+                  _this12.transactions = transactions.filter(function (o) {
                     return o.value !== '0';
                   }).map(function (t) {
                     return {
@@ -1700,10 +1730,10 @@ function (_HDWallet) {
                       timestamp: t.timeStamp,
                       transactionHash: t.hash,
                       type: t.type,
-                      value: parseFloat(_this11.web3.utils.fromWei(t.value, 'ether')).toFixed(5)
+                      value: parseFloat(_this12.web3.utils.fromWei(t.value, 'ether')).toFixed(5)
                     };
                   });
-                  return _this11.transactions;
+                  return _this12.transactions;
                 })["catch"](function (e) {
                   return console.log(e);
                 }));
@@ -1738,7 +1768,7 @@ function (_HDWallet) {
       var _fetchERC20Transactions = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee17(contractAddress) {
-        var _this12 = this;
+        var _this13 = this;
 
         var url;
         return regeneratorRuntime.wrap(function _callee17$(_context17) {
@@ -1757,9 +1787,9 @@ function (_HDWallet) {
                 return _context17.abrupt("return", fetch(url).then(function (response) {
                   return response.json();
                 }).then(function (data) {
-                  var idx = findIndex(_this12.tokens, ['contractAddress', contractAddress]);
-                  _this12.tokens[idx]._lastPolling = new Date().getTime();
-                  _this12.tokens[idx].transactions = (data.result || []).map(function (t) {
+                  var idx = findIndex(_this13.tokens, ['contractAddress', contractAddress]);
+                  _this13.tokens[idx]._lastPolling = new Date().getTime();
+                  _this13.tokens[idx].transactions = (data.result || []).map(function (t) {
                     return {
                       from: t.from,
                       timestamp: t.timestamp,
@@ -1792,7 +1822,7 @@ function (_HDWallet) {
       var _loadTokensList = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee18() {
-        var _this13 = this;
+        var _this14 = this;
 
         var pruneCache,
             _args18 = arguments;
@@ -1822,8 +1852,8 @@ function (_HDWallet) {
                     var balance = parseFloat(new BigNumber(token.balance).div(new BigNumber(10).pow(tokenDecimal)).toString());
                     return new Token(token.tokenInfo.address, tokenDecimal, token.tokenInfo.name, token.tokenInfo.symbol, "https://raw.githubusercontent.com/TrustWallet/tokens/master/images/".concat(token.tokenInfo.address, ".png"), token.tokenInfo.price, balance, new BigNumber(token.balance));
                   });
-                  _this13.tokens = tokens;
-                  return _this13.tokens;
+                  _this14.tokens = tokens;
+                  return _this14.tokens;
                 }));
 
               case 4:
@@ -1877,24 +1907,24 @@ function (_HDWallet) {
       var _sendCoinTransaction = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee19(toAddress, amount) {
-        var _this14 = this;
+        var _this15 = this;
 
         return regeneratorRuntime.wrap(function _callee19$(_context19) {
           while (1) {
             switch (_context19.prev = _context19.next) {
               case 0:
                 return _context19.abrupt("return", new Promise(function (resolve, reject) {
-                  _this14.web3.eth.sendTransaction({
+                  _this15.web3.eth.sendTransaction({
                     to: toAddress,
-                    value: _this14.web3.utils.toWei(amount.toString())
+                    value: _this15.web3.utils.toWei(amount.toString())
                   }, function (error, transaction) {
                     if (error) {
                       reject(error);
                     }
 
-                    _this14._lastPolling = null;
+                    _this15._lastPolling = null;
 
-                    _this14.transactions.push(transaction);
+                    _this15.transactions.push(transaction);
 
                     resolve(transaction);
                   });
@@ -1928,7 +1958,7 @@ function (_HDWallet) {
       var _sendERC20Transaction = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee20(contractAddress, decimals, toAddress, amount, gasLimit) {
-        var _this15 = this;
+        var _this16 = this;
 
         return regeneratorRuntime.wrap(function _callee20$(_context20) {
           while (1) {
@@ -1936,9 +1966,9 @@ function (_HDWallet) {
               case 0:
                 console.log('gasLimit', gasLimit);
                 return _context20.abrupt("return", new Promise(function (resolve, reject) {
-                  var token = new _this15.web3.eth.Contract(erc20Abi, contractAddress);
+                  var token = new _this16.web3.eth.Contract(erc20Abi, contractAddress);
                   token.methods.transfer(toAddress, amount * Math.pow(10, decimals)).send({
-                    from: _this15.getAddress(),
+                    from: _this16.getAddress(),
                     gasLimit: gasLimit
                   }, function (error, transaction) {
                     if (error) {
@@ -1969,7 +1999,7 @@ function (_HDWallet) {
       var _estimateERC20Transaction = _asyncToGenerator(
       /*#__PURE__*/
       regeneratorRuntime.mark(function _callee22(_ref6, toAddress, amount) {
-        var _this16 = this;
+        var _this17 = this;
 
         var contractAddress, isNative, decimals;
         return regeneratorRuntime.wrap(function _callee22$(_context22) {
@@ -1999,10 +2029,10 @@ function (_HDWallet) {
                             return _context21.abrupt("return");
 
                           case 4:
-                            token = new _this16.web3.eth.Contract(erc20Abi, contractAddress);
+                            token = new _this17.web3.eth.Contract(erc20Abi, contractAddress);
                             _context21.next = 7;
                             return token.methods.transfer(toAddress, amount * Math.pow(10, decimals)).estimateGas({
-                              from: _this16.getAddress()
+                              from: _this17.getAddress()
                             });
 
                           case 7:
