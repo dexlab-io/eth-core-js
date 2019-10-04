@@ -34,10 +34,14 @@ import EthereumHDWallet from './ethereum/EthereumHDWallet';
 import EthereumHDWalletKovan from './ethereum/EthereumHDWalletKovan';
 import EthereumHDWalletRopsten from './ethereum/EthereumHDWalletRopsten';
 import LegacyWallet from './ethereum/LegacyEthereum';
+import Transaction from './Transaction';
+import BasePlugin from './ethereum/plugins/base-plugin';
 
 export {
   HDWallet,
+  BasePlugin,
   WatcherTx,
+  Transaction,
   xDAIHDWallet,
   ENSResolver,
   EthereumHDWallet,
