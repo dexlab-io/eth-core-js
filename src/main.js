@@ -37,6 +37,9 @@ import LegacyWallet from './ethereum/LegacyEthereum';
 import Transaction from './Transaction';
 import BasePlugin from './ethereum/plugins/base-plugin';
 
+import compareAddresses from './utils/compareAddresses';
+import amountToWei from './utils/amountTowei';
+
 export {
   HDWallet,
   BasePlugin,
@@ -48,4 +51,6 @@ export {
   EthereumHDWalletKovan,
   EthereumHDWalletRopsten,
   LegacyWallet,
+  compareAddresses,
+  amountToWei,
 };

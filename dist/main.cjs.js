@@ -1419,16 +1419,14 @@ function (_HDWallet) {
                         switch (_context9.prev = _context9.next) {
                           case 0:
                             token = new _this7.web3.eth.Contract(erc20Abi, tokenAddress);
-                            console.log('token', token);
-                            _context9.next = 4;
+                            _context9.next = 3;
                             return token.methods.allowance(_this7.getAddress(), benificiay).call();
 
-                          case 4:
+                          case 3:
                             allowance = _context9.sent;
-                            console.log('allowance', allowance);
                             resolve(allowance);
 
-                          case 7:
+                          case 5:
                           case "end":
                             return _context9.stop();
                         }
