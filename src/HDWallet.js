@@ -58,7 +58,7 @@ export default class HDWallet {
   }
 
   importFromMasterSeed() {
-    const seed = bip39.mnemonicToSeed(this.secret);
+    const seed = bip39.mnemonicToSeedSync(this.secret);
     this._hd = HDKEY.fromMasterSeed(seed);
     this.instanceWallet = this._hd.derivePath(this.defaultHDpath).getWallet();
   }
