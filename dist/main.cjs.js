@@ -219,7 +219,7 @@ function () {
   }, {
     key: "importFromMasterSeed",
     value: function importFromMasterSeed() {
-      var seed = bip39.mnemonicToSeed(this.secret);
+      var seed = bip39.mnemonicToSeedSync(this.secret);
       this._hd = HDKEY.fromMasterSeed(seed);
       this.instanceWallet = this._hd.derivePath(this.defaultHDpath).getWallet();
     } // TODO tests
@@ -1848,7 +1848,8 @@ function (_HDWallet) {
                   var tokens = data.tokens.map(function (token) {
                     var tokenDecimal = parseInt(token.tokenInfo.decimals, 10);
                     var balance = parseFloat(new BigNumber(token.balance).div(new BigNumber(10).pow(tokenDecimal)).toString());
-                    return new Token(token.tokenInfo.address, tokenDecimal, token.tokenInfo.name, token.tokenInfo.symbol, "https://raw.githubusercontent.com/TrustWallet/tokens/master/images/".concat(token.tokenInfo.address, ".png"), token.tokenInfo.price, balance, new BigNumber(token.balance));
+                    var tokenAdressCS = Web3.utils.toChecksumAddress(token.tokenInfo.address)
+                    return new Token(token.tokenInfo.address, tokenDecimal, token.tokenInfo.name, token.tokenInfo.symbol, `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${tokenAdressCS}/logo.png`, token.tokenInfo.price, balance, new BigNumber(token.balance));
                   });
                   _this14.tokens = tokens;
                   return _this14.tokens;

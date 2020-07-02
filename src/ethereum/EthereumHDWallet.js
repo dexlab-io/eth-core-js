@@ -463,15 +463,14 @@ export default class EthereumHDWallet extends HDWallet {
           const balance = parseFloat(new BigNumber(token.balance)
             .div(new BigNumber(10).pow(tokenDecimal))
             .toString());
+          const tokenAdressCS = Web3.utils.toChecksumAddress(token.tokenInfo.address)
 
           return new Token(
             token.tokenInfo.address,
             tokenDecimal,
             token.tokenInfo.name,
             token.tokenInfo.symbol,
-            `https://raw.githubusercontent.com/TrustWallet/tokens/master/images/${
-              token.tokenInfo.address
-            }.png`,
+            `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/${tokenAdressCS}/logo.png`,
             token.tokenInfo.price,
             balance,
             new BigNumber(token.balance),
