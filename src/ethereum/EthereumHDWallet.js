@@ -396,7 +396,7 @@ export default class EthereumHDWallet extends HDWallet {
   async fetchEthTransactions() {
     const networkUrl = `${
       this.API_URL
-    }api?module=account&action=txlist&address=${this.getAddress()}&startblock=0&endblock=99999999&sort=desc&apikey=YourApiKeyToken`;
+      }api?module=account&action=txlist&address=${this.getAddress()}&startblock=0&endblock=99999999&sort=desc&apikey=YourApiKeyToken`;
     return fetch(networkUrl)
       .then(response => response.json())
       .then(res => res.result)
@@ -425,7 +425,9 @@ export default class EthereumHDWallet extends HDWallet {
 
   async fetchERC20Transactions(contractAddress) {
     if (isUndefined(contractAddress) || contractAddress === '') { throw new Error('contractAddress: is undefined'); }
-    const url = `https://blockscout.com/eth/mainnet/api?module=account&action=tokentx&address=${this.getAddress()}&contractaddress=${contractAddress}&sort=desc`;
+    const url = `${
+      this.API_URL
+      }api?module=account&action=tokentx&address=${this.getAddress()}&contractaddress=${contractAddress}&startblock=0&endblock=999999999&sort=asc&apikey=K9WQGE2F1WXMBDF9KEKRJMWVEXK6W9JWQY`;
     return fetch(url)
       .then(response => response.json())
       .then((data) => {
@@ -436,7 +438,7 @@ export default class EthereumHDWallet extends HDWallet {
         this.tokens[idx]._lastPolling = new Date().getTime();
         this.tokens[idx].transactions = (data.result || []).map(t => ({
           from: t.from,
-          timestamp: t.timestamp,
+          timestamp: t.timeStamp,
           transactionHash: t.hash,
           symbol: t.tokenSymbol,
           type: 'transfer',
@@ -444,7 +446,7 @@ export default class EthereumHDWallet extends HDWallet {
             parseInt(t.value, 10) / Math.pow(10, t.tokenDecimal)
           ).toFixed(2),
         }));
-      });
+      }).catch(e => console.log(e));
   }
 
   // TODO tests
@@ -555,7 +557,7 @@ export default class EthereumHDWallet extends HDWallet {
       const token = new this.web3.eth.Contract(erc20Abi, contractAddress);
 
       token.methods
-        .transfer(toAddress, amount * Math.pow(10, decimals))
+        .transfer(toAddress, (amount * Math.pow(10, decimals))).toString()
         .send({ from: this.getAddress(), gasLimit }, (error, transaction) => {
           if (error) {
             reject(error);

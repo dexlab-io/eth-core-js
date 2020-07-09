@@ -1781,23 +1781,26 @@ function (_HDWallet) {
                 throw new Error('contractAddress: is undefined');
 
               case 2:
-                url = "https://blockscout.com/eth/mainnet/api?module=account&action=tokentx&address=".concat(this.getAddress(), "&contractaddress=").concat(contractAddress, "&sort=desc");
-                return _context17.abrupt("return", fetch(url).then(function (response) {
-                  return response.json();
-                }).then(function (data) {
-                  var idx = findIndex(_this13.tokens, ['contractAddress', contractAddress]);
-                  _this13.tokens[idx]._lastPolling = new Date().getTime();
-                  _this13.tokens[idx].transactions = (data.result || []).map(function (t) {
-                    return {
-                      from: t.from,
-                      timestamp: t.timestamp,
-                      transactionHash: t.hash,
-                      symbol: t.tokenSymbol,
-                      type: 'transfer',
-                      value: (parseInt(t.value, 10) / Math.pow(10, t.tokenDecimal)).toFixed(2)
-                    };
-                  });
-                }));
+                url = "".concat(this.API_URL, "api?module=account&action=tokentx&address=").concat(this.getAddress(), "&contractaddress=").concat(contractAddress, "&startblock=0&endblock=999999999&sort=asc&apikey=K9WQGE2F1WXMBDF9KEKRJMWVEXK6W9JWQY")
+                    return _context17.abrupt("return", fetch(url).then(function (response) {
+                      return response.json();
+                    }).then(function (data) {
+                      var idx = findIndex(_this13.tokens, ['contractAddress', contractAddress]);
+                      _this13.tokens[idx]._lastPolling = new Date().getTime();
+                      console.log(data.result)
+                      _this13.tokens[idx].transactions = (data.result || []).map(function (t) {
+                        return {
+                          from: t.from,
+                          timestamp: t.timeStamp,
+                          transactionHash: t.hash,
+                          symbol: t.tokenSymbol,
+                          type: 'transfer',
+                          value: (parseInt(t.value, 10) / Math.pow(10, t.tokenDecimal)).toFixed(2)
+                        };
+                      });
+                    })["catch"](function (e) {
+                      return console.log(e);
+                    }));
 
               case 4:
               case "end":
@@ -1966,7 +1969,7 @@ function (_HDWallet) {
                 console.log('gasLimit', gasLimit);
                 return _context20.abrupt("return", new Promise(function (resolve, reject) {
                   var token = new _this16.web3.eth.Contract(erc20Abi, contractAddress);
-                  token.methods.transfer(toAddress, amount * Math.pow(10, decimals)).send({
+                  token.methods.transfer(toAddress, (amount * Math.pow(10, decimals)).toString()).send({
                     from: _this16.getAddress(),
                     gasLimit: gasLimit
                   }, function (error, transaction) {
