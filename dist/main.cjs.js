@@ -1133,11 +1133,13 @@ function (_HDWallet) {
                             if (!_this3.watchOnly) {
                               engine.addProvider(new WalletSubprovider(_this3.instanceWallet, {}));
                             }
-
                             engine.addProvider(new RpcSubprovider({
                               rpcUrl: _this3.networkUrl
                             }));
                             engine.start();
+                            engine.on('error', (error) => {
+                              console.log(error);
+                            })
                             _this3.web3 = new Web3(engine);
                             _this3.web3.eth.defaultAccount = _this3.getAddress();
 

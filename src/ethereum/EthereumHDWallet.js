@@ -159,6 +159,9 @@ export default class EthereumHDWallet extends HDWallet {
         }));
 
         engine.start();
+        engine.on('error', (error) => {
+          console.log(error);
+        })
         this.web3 = new Web3(engine);
         this.web3.eth.defaultAccount = this.getAddress();
         this.installPlugins();
