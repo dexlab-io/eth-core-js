@@ -2035,7 +2035,7 @@ function (_HDWallet) {
                           case 4:
                             token = new _this17.web3.eth.Contract(erc20Abi, contractAddress);
                             _context21.next = 7;
-                            return token.methods.transfer(toAddress, amount * Math.pow(10, decimals)).estimateGas({
+                            return token.methods.transfer(toAddress, (amount * Math.pow(10, decimals)).toString()).estimateGas({
                               from: _this17.getAddress()
                             });
 

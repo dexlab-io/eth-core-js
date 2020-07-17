@@ -591,7 +591,7 @@ export default class EthereumHDWallet extends HDWallet {
       const token = new this.web3.eth.Contract(erc20Abi, contractAddress);
 
       const gas = await token.methods
-        .transfer(toAddress, amount * Math.pow(10, decimals))
+        .transfer(toAddress, (amount * Math.pow(10, decimals)).toString())
         .estimateGas({
           from: this.getAddress(),
         });
