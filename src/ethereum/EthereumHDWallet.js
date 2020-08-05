@@ -399,7 +399,7 @@ export default class EthereumHDWallet extends HDWallet {
   async fetchEthTransactions() {
     const networkUrl = `${
       this.API_URL
-      }api?module=account&action=txlist&address=${this.getAddress()}&startblock=0&endblock=99999999&sort=desc&apikey=YourApiKeyToken`;
+      }api?module=account&action=txlist&address=${this.getAddress()}&startblock=0&endblock=99999999&sort=desc&apikey=UBQHA4HNNU418TFNZUKBJR4TYUA3KBVSU9`;
     return fetch(networkUrl)
       .then(response => response.json())
       .then(res => res.result)
@@ -430,7 +430,7 @@ export default class EthereumHDWallet extends HDWallet {
     if (isUndefined(contractAddress) || contractAddress === '') { throw new Error('contractAddress: is undefined'); }
     const url = `${
       this.API_URL
-      }api?module=account&action=tokentx&address=${this.getAddress()}&contractaddress=${contractAddress}&startblock=0&endblock=999999999&sort=asc&apikey=K9WQGE2F1WXMBDF9KEKRJMWVEXK6W9JWQY`;
+      }api?module=account&action=tokentx&address=${this.getAddress()}&contractaddress=${contractAddress}&startblock=0&endblock=999999999&sort=asc&apikey=UBQHA4HNNU418TFNZUKBJR4TYUA3KBVSU9`;
     return fetch(url)
       .then(response => response.json())
       .then((data) => {
